@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/loveencounterflow/mingkwai-rack#readme",
   "scripts": {
+    "git-status": "git status --ignored",
     "build": "( cd linktarget && coffee -c index.coffee )",
     "helo": "node linktarget/index.js",
     "test": "npm run build && node linktarget/index.js && echo 'yay!'"
