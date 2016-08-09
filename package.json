@@ -1,0 +1,27 @@
+{
+  "name": "mingkwai-rack",
+  "version": "0.0.0",
+  "description": "experimental 'frame app' (or is it an 'app frame'?)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loveencounterflow/mingkwai-rack.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/loveencounterflow/mingkwai-rack/issues"
+  },
+  "homepage": "https://github.com/loveencounterflow/mingkwai-rack#readme",
+  "scripts": {
+    "build": "( cd linktarget && coffee -c index.coffee )",
+    "helo": "node linktarget/index.js",
+    "test": "npm run build && node linktarget/index.js && echo 'yay!'"
+  },
+  "dependencies": {
+    "cnd": "^4.1.1"
+  }
+}
