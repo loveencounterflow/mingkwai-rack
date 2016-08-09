@@ -4,7 +4,11 @@
   "description": "experimental 'frame app' (or is it an 'app frame'?)",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "git-status": "git status --ignored",
+    "build": "( cd linktarget && coffee -c index.coffee )",
+    "typeset": "node mingkwai/lib/cli.js mkts $*",
+    "helo": "node linktarget/index.js",
+    "test": "npm run build && node linktarget/index.js && echo 'yay!'"
   },
   "repository": {
     "type": "git",
@@ -16,12 +20,6 @@
     "url": "https://github.com/loveencounterflow/mingkwai-rack/issues"
   },
   "homepage": "https://github.com/loveencounterflow/mingkwai-rack#readme",
-  "scripts": {
-    "git-status": "git status --ignored",
-    "build": "( cd linktarget && coffee -c index.coffee )",
-    "helo": "node linktarget/index.js",
-    "test": "npm run build && node linktarget/index.js && echo 'yay!'"
-  },
   "dependencies": {
     "cnd": "^4.1.1"
   }

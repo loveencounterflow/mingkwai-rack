@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
+
+
+# Set `$APP_PATH` to the app's home folder path; add that path and the `node_modules`
+# folder to the NodeJS module search path and call the npm `run` script with the
+# remaining arguments from tghe command line:
 export APP_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export NODE_PATH=$APP_PATH:$APP_PATH/node_modules
 cd $APP_PATH
-npm run $*
 
-# ( cd linktarget && coffee -c index.coffee ) && node linktarget/index.js && echo 'yay!'
-# echo 0: $0
-# echo 1: $1
-# echo 2: $2
-# echo 3: $3
-# echo *: $*
+# echo '$*:   ' $*
+# echo '$0:   ' $0
+# echo '$1:   ' $1
+# echo '$2:   ' $2
+# echo '$3:   ' $3
+# echo '$4:   ' $4
+
+npm run $*
