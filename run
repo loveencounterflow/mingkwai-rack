@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+export APP_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export NODE_PATH=$APP_PATH:$APP_PATH/node_modules
+cd $APP_PATH
+npm run $*
+
+# ( cd linktarget && coffee -c index.coffee ) && node linktarget/index.js && echo 'yay!'
+# echo 0: $0
+# echo 1: $1
+# echo 2: $2
+# echo 3: $3
+# echo *: $*
