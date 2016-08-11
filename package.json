@@ -5,9 +5,8 @@
   "main": "index.js",
   "scripts": {
     "git-status": "git status --ignored",
-    "build": "( cd linktarget && coffee -c index.coffee )",
+    "build": "( cd mingkwai && npm run build ) && ( cd mingkwai-typesetter && npm run build ) && ( cd mingkwai-typesetter-jizura && npm run build )",
     "typeset": "node mingkwai/lib/cli.js mkts $*",
-    "helo": "node linktarget/index.js",
     "test": "npm run build && node linktarget/index.js && echo 'yay!'"
   },
   "repository": {
