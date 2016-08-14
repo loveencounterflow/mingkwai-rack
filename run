@@ -14,5 +14,7 @@ cd $APP_PATH
 # echo '$2:   ' $2
 # echo '$3:   ' $3
 # echo '$4:   ' $4
+# echo $APP_PATH
 
-npm run $*
+# npm run $*
+npm run "$1" "$2"
