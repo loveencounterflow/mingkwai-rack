@@ -21,6 +21,6 @@
   "homepage": "https://github.com/loveencounterflow/mingkwai-rack#readme",
   "dependencies": {
     "cnd": "^4.1.2",
-    "ncr": "^0.2.9"
+    "ncr": "^0.2.10"
   }
 }
