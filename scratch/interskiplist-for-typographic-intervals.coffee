@@ -84,34 +84,5 @@ unless module.parent?
   # debug u
 
 
-mul = ( x, y ) ->
-  switch CND.type_of x
-    when 'rational-number'
-      return { '~isa': 'rational-number', 0: x[ 0 ] * y[ 0 ], 1: x[ 1 ] * y[ 1 ], }
-    when 'complex-number'
-      undefined
-    when 'interval'
-      p0 = x.lo * y.lo
-      p1 = x.lo * y.hi
-      p2 = x.hi * y.lo
-      p3 = x.hi * y.hi
-      return { '~isa': 'interval', lo: ( Math.min p0, p1, p2, p3 ), hi: ( Math.max p0, p1, p2, p3 ) }
-    else
-      throw new Error '### Meh ###'
-
-sum = ( x, y ) ->
-  switch CND.type_of x
-    when 'rational-number'
-      undefined
-    when 'complex-number'
-      undefined
-    when 'interval'
-      undefined
-    else
-      throw new Error '### Meh ###'
-
-debug mul { '~isa': 'rational-number', 0: 3, 1: 4, }, { '~isa': 'rational-number', 0: 1, 1: 2, }
-debug mul { '~isa': 'interval', lo: 3, hi: 4, }, { '~isa': 'interval', lo: 1, hi: 2, }
-
 
 
