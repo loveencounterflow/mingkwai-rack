@@ -75,11 +75,12 @@ glyph_styles              = mkts_opions[ 'tex' ][ 'glyph-styles'        ]
         target_glyph  } = record
       source_cid        = JZRXNCR.as_cid record[ 'source_glyph' ]
       target_cid        = JZRXNCR.as_cid record[ 'target_glyph' ]
-      tag               = record[ 'tag' ]
-      sim               = { "#{tag}": { target: target_glyph, }, }
-      ISL.add u, { lo: source_cid, hi: source_cid, sim, }
-      sim               = { "#{tag}": { source: source_glyph, }, }
-      ISL.add u, { lo: target_cid, hi: target_cid, sim, }
+      otag              = record[ 'tag' ]
+      tag               = "sim:#{otag}"
+      sim               = { "#{otag}": { target: target_glyph, }, }
+      ISL.add u, { lo: source_cid, hi: source_cid, sim, tag, }
+      sim               = { "#{otag}": { source: source_glyph, }, }
+      ISL.add u, { lo: target_cid, hi: target_cid, sim, tag, }
   #.........................................................................................................
   $finalize = => $ 'finish', handler
   #.........................................................................................................
@@ -146,6 +147,7 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
       rsg:  'assign'
       sim:  ( values, context ) ->
         ### TAINT should be a standard reducer ###
+        debug '7701', values
         R = {}
         for value in values
           for name, sub_value of value
@@ -163,12 +165,16 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
     #.......................................................................................................
     # text  = '([Xqf]) ([里䊷䊷里]) ([Xqf])'
     # # text  = 'q里䊷f'
-    for glyph in Array.from '龵⿸釒𤴔'
+    for glyph in Array.from '龵⿸釒𤴔丨亅㐅乂'
       description = aggregate glyph
       info glyph
       urge '  tag:', ( description[ 'tag' ] ? [ '-/-' ] ).join ', '
       urge '  rsg:', description[ 'rsg' ]
-      urge '  sim:', description[ 'sim' ]                ? '-/-'
+      if ( sim = description[ 'sim' ] )?
+        for sim_tag, value of sim
+          urge "  sim:#{sim_tag}: #{rpr value}"
+      else
+        urge '  sim:', '-/-'
       urge '  blk:', description[ 'tex' ][ 'block'     ] ? '-/-'
       urge '  cp: ', description[ 'tex' ][ 'codepoint' ] ? '-/-'
     #.......................................................................................................
