@@ -77,11 +77,11 @@ glyph_styles              = mkts_opions[ 'tex' ][ 'glyph-styles'        ]
       target_cid        = JZRXNCR.as_cid record[ 'target_glyph' ]
       otag              = record[ 'tag' ]
       mtag              = "sim/target/#{otag}"
-      ctag              = "sim sim/target sim/target/#{otag} sim/#{otag}"
+      ctag              = "sim sim/has-target sim/is-source sim/has-target/#{otag} sim/is-source/#{otag} sim/#{otag}"
       # sim               = { "#{otag}": { target: target_glyph, }, }
       ISL.add u, { lo: source_cid, hi: source_cid, "#{mtag}": target_glyph, tag: ctag, }
       mtag              = "sim/source/#{otag}"
-      ctag              = "sim sim/source sim/source/#{otag} sim/#{otag}"
+      ctag              = "sim sim/has-source sim/is-target sim/has-source/#{otag} sim/is-target/#{otag} sim/#{otag}"
       # sim               = { "#{otag}": { source: source_glyph, }, }
       ISL.add u, { lo: target_cid, hi: target_cid, "#{mtag}": source_glyph, tag: ctag, }
   #.........................................................................................................
