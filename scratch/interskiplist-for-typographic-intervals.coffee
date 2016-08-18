@@ -37,7 +37,9 @@ new_jizura_xncr = ->
   #.........................................................................................................
   for rsg, tex_command of tex_command_by_rsgs
     for entry in ISL.find_entries R.unicode_isl, 'rsg', rsg
-      ( entry[ 'tex' ] ?= {} )[ 'block' ] = tex_command
+      debug '3321', tex_command
+      target            = entry[ 'tex' ] ?= {}
+      target[ 'block' ] = tex_command
   #.........................................................................................................
   for glyph, glyph_style of glyph_styles
     ### TAINT must resolve (X)NCRs ###
@@ -74,10 +76,42 @@ unless module.parent?
         for name, sub_value of value
           R[ name ] = sub_value
       return R
-  help '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '龵', reducers
-  help '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '⿸', reducers
+  help '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '龵'
+  help '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '⿸'
   urge '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '龵', reducers
   urge '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '⿸', reducers
   # f()
   # debug u
+
+
+mul = ( x, y ) ->
+  switch CND.type_of x
+    when 'rational-number'
+      return { '~isa': 'rational-number', 0: x[ 0 ] * y[ 0 ], 1: x[ 1 ] * y[ 1 ], }
+    when 'complex-number'
+      undefined
+    when 'interval'
+      p0 = x.lo * y.lo
+      p1 = x.lo * y.hi
+      p2 = x.hi * y.lo
+      p3 = x.hi * y.hi
+      return { '~isa': 'interval', lo: ( Math.min p0, p1, p2, p3 ), hi: ( Math.max p0, p1, p2, p3 ) }
+    else
+      throw new Error '### Meh ###'
+
+sum = ( x, y ) ->
+  switch CND.type_of x
+    when 'rational-number'
+      undefined
+    when 'complex-number'
+      undefined
+    when 'interval'
+      undefined
+    else
+      throw new Error '### Meh ###'
+
+debug mul { '~isa': 'rational-number', 0: 3, 1: 4, }, { '~isa': 'rational-number', 0: 1, 1: 2, }
+debug mul { '~isa': 'interval', lo: 3, hi: 4, }, { '~isa': 'interval', lo: 1, hi: 2, }
+
+
 
