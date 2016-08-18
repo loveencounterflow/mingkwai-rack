@@ -55,7 +55,45 @@ glyph_styles              = mkts_opions[ 'tex' ][ 'glyph-styles'        ]
     glyph_style_tex = glyph_style_as_tex glyph, glyph_style
     ISL.add JZRXNCR.unicode_isl, { lo: cid, hi: cid, tex: { codepoint: glyph_style_tex, }, }
   #.........................................................................................................
-  handler()
+  @populate_isl_with_sims JZRXNCR, handler
+  return null
+
+#-----------------------------------------------------------------------------------------------------------
+@populate_isl_with_sims = ( JZRXNCR, handler ) ->
+  ISL = JZRXNCR._ISL
+  u   = JZRXNCR.unicode_isl
+  #.........................................................................................................
+  $filter_gaiji = =>
+    return $ ( record, send ) =>
+      { source_glyph_realm
+        target_glyph_realm  } = record
+      send record if ( source_glyph_realm is 'inner' ) and ( target_glyph_realm is 'inner' )
+  #.........................................................................................................
+  $add_intervals = =>
+    return $ ( record, send ) =>
+      { source_glyph
+        target_glyph  } = record
+      source_cid        = JZRXNCR.as_cid record[ 'source_glyph' ]
+      target_cid        = JZRXNCR.as_cid record[ 'target_glyph' ]
+      tag               = record[ 'tag' ]
+      sim               = { tag, target_glyph, }
+      ISL.add u, { lo: source_cid, hi: source_cid, sim, }
+      sim               = { tag, source_glyph, }
+      ISL.add u, { lo: target_cid, hi: target_cid, sim, }
+  #.........................................................................................................
+  $finalize = => $ 'finish', handler
+  #.........................................................................................................
+  step ( resume ) =>
+    SIMS          = require '../../jizura-db-feeder/lib/feed-sims'
+    ### TAINT should use `jizura-db-feeder` method ###
+    S             = {}
+    S.db          = null
+    S.raw_output  = D.new_stream pipeline: [ $filter_gaiji(), $add_intervals(), $finalize() ]
+    S.source_home = PATH.resolve __dirname, '../..',  'jizura-datasources/data/flat-files/'
+    yield SIMS.feed S, resume
+    handler()
+    return null
+  #.........................................................................................................
   return null
 
 #-----------------------------------------------------------------------------------------------------------
@@ -109,6 +147,13 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
       '*':  'skip'
       tag:  'tag'
       rsg:  'assign'
+      sim:  ( values, context ) ->
+        ### TAINT should be a standard reducer ###
+        R = {}
+        for value in values
+          for name, sub_value of value
+            R[ name ] = sub_value
+        return R
       tex:  ( values, context ) ->
         ### TAINT should be a standard reducer ###
         R = {}
@@ -117,61 +162,25 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
             R[ name ] = sub_value
         return R
     #.......................................................................................................
+    aggregate = @_get_aggregate JZRXNCR, reducers
+    #.......................................................................................................
     for glyph in Array.from '龵⿸釒𤴔'
-      description = JZRXNCR._ISL.aggregate JZRXNCR.unicode_isl, glyph, reducers
+      description = aggregate JZRXNCR.unicode_isl, glyph, reducers
       info glyph
       urge ' ', description[ 'tag' ].join ', '
       urge ' ', description[ 'rsg' ]
-      urge ' ', description[ 'tex' ][ 'block' ] ? './.'
-      urge ' ', description[ 'tex' ][ 'codepoint' ] ? './.'
+      urge ' ', description[ 'sim' ]                ? '-/-'
+      urge ' ', description[ 'tex' ][ 'block'     ] ? '-/-'
+      urge ' ', description[ 'tex' ][ 'codepoint' ] ? '-/-'
     #.......................................................................................................
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@populate_isl_with_sims = ( JZRXNCR, handler ) ->
-  ISL = JZRXNCR._ISL
-  u   = JZRXNCR.unicode_isl
-  #.........................................................................................................
-  $filter_gaiji = =>
-    return $ ( record, send ) =>
-      { source_glyph_realm
-        target_glyph_realm  } = record
-      send record if ( source_glyph_realm is 'inner' ) and ( target_glyph_realm is 'inner' )
-  #.........................................................................................................
-  $add_intervals = =>
-    return $ ( record, send ) =>
-      { source_glyph
-        target_glyph  } = record
-      source_cid        = JZRXNCR.as_cid record[ 'source_glyph' ]
-      target_cid        = JZRXNCR.as_cid record[ 'target_glyph' ]
-      tag               = record[ 'tag' ]
-      sim               = { tag, target_glyph, }
-      ISL.add u, { lo: source_cid, hi: source_cid, sim, }
-      sim               = { tag, source_glyph, }
-      ISL.add u, { lo: target_cid, hi: target_cid, sim, }
-  #.........................................................................................................
-  step ( resume ) =>
-    SIMS          = require '../../jizura-db-feeder/lib/feed-sims'
-    ### TAINT should use `jizura-db-feeder` method ###
-    S             = {}
-    S.db          = null
-    S.raw_output  = D.new_stream pipeline: [ $filter_gaiji(), $add_intervals() ]
-    S.source_home = PATH.resolve __dirname, '../..',  'jizura-datasources/data/flat-files/'
-    yield SIMS.feed S, resume
-    handler()
-    return null
-  #.........................................................................................................
-  return null
-
-# #-----------------------------------------------------------------------------------------------------------
-# f = ->
-#   cache = {}
-#   aggregate = ( glyph ) ->
-#     return R if ( R = cache[ glyph ] )?
-#     return cache[ glyph ] = ISL.aggregate u, glyph, reducers
-
-#   for glyph in Array.from text
-#     urge glyph, aggregate glyph
+@_get_aggregate = ( NCR, reducers ) ->
+  cache = {}
+  return ( glyph ) ->
+    return R if ( R = cache[ glyph ] )?
+    return cache[ glyph ] = NCR._ISL.aggregate NCR.unicode_isl, glyph, reducers
 
 
 ############################################################################################################
