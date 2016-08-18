@@ -55,11 +55,11 @@ glyph_styles              = mkts_opions[ 'tex' ][ 'glyph-styles'        ]
     glyph_style_tex = glyph_style_as_tex glyph, glyph_style
     ISL.add JZRXNCR.unicode_isl, { lo: cid, hi: cid, tex: { codepoint: glyph_style_tex, }, }
   #.........................................................................................................
-  @populate_isl_with_sims JZRXNCR, handler
+  @_populate_isl_with_sims JZRXNCR, handler
   return null
 
 #-----------------------------------------------------------------------------------------------------------
-@populate_isl_with_sims = ( JZRXNCR, handler ) ->
+@_populate_isl_with_sims = ( JZRXNCR, handler ) ->
   ISL = JZRXNCR._ISL
   u   = JZRXNCR.unicode_isl
   #.........................................................................................................
@@ -76,13 +76,18 @@ glyph_styles              = mkts_opions[ 'tex' ][ 'glyph-styles'        ]
       source_cid        = JZRXNCR.as_cid record[ 'source_glyph' ]
       target_cid        = JZRXNCR.as_cid record[ 'target_glyph' ]
       otag              = record[ 'tag' ]
-      tag               = "sim-target:#{otag}"
-      sim               = { "#{otag}": { target: target_glyph, }, }
-      ISL.add u, { lo: source_cid, hi: source_cid, sim, tag, }
-      tag               = "sim-source:#{otag}"
-      sim               = { "#{otag}": { source: source_glyph, }, }
-      ISL.add u, { lo: target_cid, hi: target_cid, sim, tag, }
+      tag               = "sim/target/#{otag}"
+      # sim               = { "#{otag}": { target: target_glyph, }, }
+      ISL.add u, { lo: source_cid, hi: source_cid, "#{tag}": target_glyph, tag, }
+      tag               = "sim/source/#{otag}"
+      # sim               = { "#{otag}": { source: source_glyph, }, }
+      ISL.add u, { lo: target_cid, hi: target_cid, "#{tag}": source_glyph, tag, }
   #.........................................................................................................
+  $collect_tags = =>
+    tags = new Set
+    return $ 'null', ( record ) =>
+      if record? then tags.add record[ 'tag' ]
+      else debug '3334', tags
   $finalize = => $ 'finish', handler
   #.........................................................................................................
   step ( resume ) =>
@@ -90,7 +95,8 @@ glyph_styles              = mkts_opions[ 'tex' ][ 'glyph-styles'        ]
     ### TAINT should use `jizura-db-feeder` method ###
     S             = {}
     S.db          = null
-    S.raw_output  = D.new_stream pipeline: [ $filter_gaiji(), $add_intervals(), $finalize() ]
+    S.raw_output  = D.new_stream pipeline: [ $filter_gaiji(), $add_intervals(), $collect_tags(), $finalize() ]
+    # S.raw_output  = D.new_stream pipeline: [ $filter_gaiji(), $add_intervals(), $finalize() ]
     S.source_home = PATH.resolve __dirname, '../..',  'jizura-datasources/data/flat-files/'
     yield SIMS.feed S, resume
     handler()
@@ -141,19 +147,30 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
   step ( resume ) =>
     JZRXNCR = @new_jizura_xncr()
     yield @populate_isl JZRXNCR, resume
+    ### TAINT tags should be collected during SIM reading ###
+    sim_tags = [
+      'sim/source/global'
+      'sim/source/components'
+      'sim/source/components/search'
+      'sim/source/false-identity'
+      'sim/target/global'
+      'sim/target/components'
+      'sim/target/components/search'
+      'sim/target/false-identity'
+      ]
     #.......................................................................................................
     reducers =
       '*':  'skip'
       tag:  'tag'
       rsg:  'assign'
-      sim:  ( values, context ) ->
-        ### TAINT should be a standard reducer ###
-        debug '7701', values
-        R = {}
-        for value in values
-          for name, sub_value of value
-            R[ name ] = sub_value
-        return R
+      # sim:  ( values, context ) ->
+      #   ### TAINT should be a standard reducer ###
+      #   debug '7701', values
+      #   R = {}
+      #   for value in values
+      #     for name, sub_value of value
+      #       R[ name ] = sub_value
+      #   return R
       tex:  ( values, context ) ->
         ### TAINT should be a standard reducer ###
         R = {}
@@ -162,7 +179,8 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
             R[ name ] = sub_value
         return R
     #.......................................................................................................
-    aggregate = @_get_aggregate JZRXNCR, reducers
+    reducers[ sim_tag ] = 'list' for sim_tag in sim_tags
+    aggregate           = @_get_aggregate JZRXNCR, reducers
     #.......................................................................................................
     # text  = '([Xqf]) ([里䊷䊷里]) ([Xqf])'
     # # text  = 'q里䊷f'
@@ -171,11 +189,14 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
       info glyph
       urge '  tag:', ( description[ 'tag' ] ? [ '-/-' ] ).join ', '
       urge '  rsg:', description[ 'rsg' ]
-      if ( sim = description[ 'sim' ] )?
-        for sim_tag, value of sim
-          urge "  sim:#{sim_tag}: #{rpr value}"
-      else
-        urge '  sim:', '-/-'
+      # if ( sim = description[ 'sim' ] )?
+      #   for sim_tag, value of sim
+      #     urge "  sim:#{sim_tag}: #{rpr value}"
+      # else
+      #   urge '  sim:', '-/-'
+      for sim_tag in sim_tags
+        continue unless ( value = description[ sim_tag ] )?
+        urge "  #{sim_tag}:", value
       urge '  blk:', description[ 'tex' ][ 'block'     ] ? '-/-'
       urge '  cp: ', description[ 'tex' ][ 'codepoint' ] ? '-/-'
     #.......................................................................................................
