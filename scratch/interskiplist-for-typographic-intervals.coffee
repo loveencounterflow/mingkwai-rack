@@ -2,8 +2,8 @@
 
 
 ############################################################################################################
-njs_path                  = require 'path'
-njs_fs                    = require 'fs'
+PATH                      = require 'path'
+# FS                        = require 'fs'
 #...........................................................................................................
 CND                       = require 'cnd'
 rpr                       = CND.rpr
@@ -17,6 +17,11 @@ warn                      = CND.get_logger 'warn',      badge
 help                      = CND.get_logger 'help',      badge
 urge                      = CND.get_logger 'urge',      badge
 echo                      = CND.echo.bind CND
+#...........................................................................................................
+D                         = require 'pipedreams'
+{ $
+  $async }                = D
+{ step }                  = require 'coffeenode-suspend'
 #...........................................................................................................
 mkts_opions               = require '../mingkwai-typesetter/options'
 tex_command_by_rsgs       = mkts_opions[ 'tex' ][ 'tex-command-by-rsgs' ]
@@ -35,10 +40,10 @@ new_jizura_xncr = ->
   R     = mix NCR, { _input_default: 'xncr', }
   ISL   = R._ISL
   #.........................................................................................................
-  for rsg, tex_command of tex_command_by_rsgs
+  for rsg, block_command of tex_command_by_rsgs
     for entry in ISL.find_entries R.unicode_isl, 'rsg', rsg
       target            = entry[ 'tex' ] ?= {}
-      target[ 'block' ] = tex_command
+      target[ 'block' ] = block_style_as_tex block_command
   #.........................................................................................................
   for glyph, glyph_style of glyph_styles
     ### TAINT must resolve (X)NCRs ###
@@ -59,7 +64,12 @@ f = ->
     urge glyph, aggregate glyph
 
 #-----------------------------------------------------------------------------------------------------------
+block_style_as_tex = ( block_style ) -> "\\#{block_style}"
+
+#-----------------------------------------------------------------------------------------------------------
 glyph_style_as_tex = ( glyph, glyph_style ) ->
+  ### NOTE this code replaces parts of `tex-writer-typofix._style_chr` ###
+  #.........................................................................................................
   ### TAINT using `prPushRaise` here in place of `tfPushRaise` because it gives better
   results ###
   use_cxltx_pushraise = no
@@ -91,9 +101,8 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
   R = R.join ''
   return R
 
-
-############################################################################################################
-unless module.parent?
+#-----------------------------------------------------------------------------------------------------------
+demo = ->
   text  = '([Xqf]) ([里䊷䊷里]) ([Xqf])'
   # text  = 'q里䊷f'
   reducers  = { '*': 'skip', 'tag': 'tag', 'rsg': 'assign', }
@@ -119,6 +128,21 @@ unless module.parent?
   # f()
   # debug u
 
+#-----------------------------------------------------------------------------------------------------------
+f = ->
+  step ( resume ) =>
+    SIMS          = require '../../jizura-db-feeder/lib/feed-sims'
+    ### TAINT should use `jizura-db-feeder` method ###
+    S             = {}
+    S.db          = null
+    S.raw_output  = D.$show()
+    S.source_home = PATH.resolve __dirname, '../..',  'jizura-datasources/data/flat-files/'
+    yield SIMS.feed S, resume
+    handler()
 
 
+############################################################################################################
+unless module.parent?
+  # demo()
+  f()
 
