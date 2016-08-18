@@ -37,14 +37,14 @@ new_jizura_xncr = ->
   #.........................................................................................................
   for rsg, tex_command of tex_command_by_rsgs
     for entry in ISL.find_entries R.unicode_isl, 'rsg', rsg
-      debug '3321', tex_command
       target            = entry[ 'tex' ] ?= {}
       target[ 'block' ] = tex_command
   #.........................................................................................................
   for glyph, glyph_style of glyph_styles
     ### TAINT must resolve (X)NCRs ###
-    cid = R.as_cid glyph
-    ISL.add R.unicode_isl, { lo: cid, hi: cid, tex: { codepoint: glyph_style, }, }
+    cid             = R.as_cid glyph
+    glyph_style_tex = glyph_style_as_tex glyph, glyph_style
+    ISL.add R.unicode_isl, { lo: cid, hi: cid, tex: { codepoint: glyph_style_tex, }, }
   #.........................................................................................................
   return R
 
@@ -58,6 +58,39 @@ f = ->
   for glyph in Array.from text
     urge glyph, aggregate glyph
 
+#-----------------------------------------------------------------------------------------------------------
+glyph_style_as_tex = ( glyph, glyph_style ) ->
+  ### TAINT using `prPushRaise` here in place of `tfPushRaise` because it gives better
+  results ###
+  use_cxltx_pushraise = no
+  #.........................................................................................................
+  R         = []
+  R.push "{"
+  # R.push "\\cn" if is_cjk
+  rpl_push  = glyph_style[ 'push'   ] ? null
+  rpl_raise = glyph_style[ 'raise'  ] ? null
+  rpl_chr   = glyph_style[ 'glyph'  ] ? glyph
+  rpl_cmd   = glyph_style[ 'cmd'    ] ? null
+  # rpl_cmd   = glyph_style[ 'cmd'    ] ? rsg_command
+  # rpl_cmd   = null if rpl_cmd is 'cn'
+  #.........................................................................................................
+  if use_cxltx_pushraise
+    if      rpl_push? and rpl_raise?  then R.push "\\prPushRaise{#{rpl_push}}{#{rpl_raise}}{"
+    else if rpl_push?                 then R.push "\\prPush{#{rpl_push}}{"
+    else if               rpl_raise?  then R.push "\\prRaise{#{rpl_raise}}{"
+  #.........................................................................................................
+  else
+    if      rpl_push? and rpl_raise?  then R.push "\\tfPushRaise{#{rpl_push}}{#{rpl_raise}}"
+    else if rpl_push?                 then R.push "\\tfPush{#{rpl_push}}"
+    else if               rpl_raise?  then R.push "\\tfRaise{#{rpl_raise}}"
+  #.........................................................................................................
+  if rpl_cmd?                       then R.push "\\#{rpl_cmd}{}"
+  R.push rpl_chr
+  R.push "}" if use_cxltx_pushraise and ( rpl_push? or rpl_raise? )
+  R.push "}"
+  R = R.join ''
+  return R
+
 
 ############################################################################################################
 unless module.parent?
@@ -69,17 +102,20 @@ unless module.parent?
     '*':  'skip'
     tag:  'tag'
     rsg:  'assign'
-    tex:  ( ids_and_values ) ->
+    tex:  ( values, context ) ->
       ### TAINT should be a standard reducer ###
       R = {}
-      for [ id, value, ] in ids_and_values
+      for value in values
         for name, sub_value of value
           R[ name ] = sub_value
       return R
-  help '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '龵'
-  help '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '⿸'
-  urge '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '龵', reducers
-  urge '8830', XNCR._ISL.aggregate XNCR.unicode_isl, '⿸', reducers
+  for glyph in Array.from '龵⿸釒𤴔'
+    description = XNCR._ISL.aggregate XNCR.unicode_isl, glyph, reducers
+    info glyph
+    urge ' ', description[ 'tag' ].join ', '
+    urge ' ', description[ 'rsg' ]
+    urge ' ', description[ 'tex' ][ 'block' ] ? './.'
+    urge ' ', description[ 'tex' ][ 'codepoint' ] ? './.'
   # f()
   # debug u
 
