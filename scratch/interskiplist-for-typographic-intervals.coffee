@@ -70,15 +70,15 @@ glyph_styles              = mkts_opions[ 'tex' ][ 'glyph-styles'        ]
       send record if ( source_glyph_realm is 'inner' ) and ( target_glyph_realm is 'inner' )
   #.........................................................................................................
   $add_intervals = =>
-    return $ ( record, send ) =>
+    return $ ( record ) =>
       { source_glyph
         target_glyph  } = record
       source_cid        = JZRXNCR.as_cid record[ 'source_glyph' ]
       target_cid        = JZRXNCR.as_cid record[ 'target_glyph' ]
       tag               = record[ 'tag' ]
-      sim               = { tag, target_glyph, }
+      sim               = { "#{tag}": { target: target_glyph, }, }
       ISL.add u, { lo: source_cid, hi: source_cid, sim, }
-      sim               = { tag, source_glyph, }
+      sim               = { "#{tag}": { source: source_glyph, }, }
       ISL.add u, { lo: target_cid, hi: target_cid, sim, }
   #.........................................................................................................
   $finalize = => $ 'finish', handler
@@ -139,9 +139,6 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
   step ( resume ) =>
     JZRXNCR = @new_jizura_xncr()
     yield @populate_isl JZRXNCR, resume
-    text  = '([Xqf]) ([里䊷䊷里]) ([Xqf])'
-    # text  = 'q里䊷f'
-    reducers  = { '*': 'skip', 'tag': 'tag', 'rsg': 'assign', }
     #.......................................................................................................
     reducers =
       '*':  'skip'
@@ -164,23 +161,25 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
     #.......................................................................................................
     aggregate = @_get_aggregate JZRXNCR, reducers
     #.......................................................................................................
+    # text  = '([Xqf]) ([里䊷䊷里]) ([Xqf])'
+    # # text  = 'q里䊷f'
     for glyph in Array.from '龵⿸釒𤴔'
-      description = aggregate JZRXNCR.unicode_isl, glyph, reducers
+      description = aggregate glyph
       info glyph
-      urge ' ', description[ 'tag' ].join ', '
-      urge ' ', description[ 'rsg' ]
-      urge ' ', description[ 'sim' ]                ? '-/-'
-      urge ' ', description[ 'tex' ][ 'block'     ] ? '-/-'
-      urge ' ', description[ 'tex' ][ 'codepoint' ] ? '-/-'
+      urge '  tag:', ( description[ 'tag' ] ? [ '-/-' ] ).join ', '
+      urge '  rsg:', description[ 'rsg' ]
+      urge '  sim:', description[ 'sim' ]                ? '-/-'
+      urge '  blk:', description[ 'tex' ][ 'block'     ] ? '-/-'
+      urge '  cp: ', description[ 'tex' ][ 'codepoint' ] ? '-/-'
     #.......................................................................................................
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@_get_aggregate = ( NCR, reducers ) ->
+@_get_aggregate = ( ncr, reducers ) ->
   cache = {}
-  return ( glyph ) ->
+  return ( glyph ) =>
     return R if ( R = cache[ glyph ] )?
-    return cache[ glyph ] = NCR._ISL.aggregate NCR.unicode_isl, glyph, reducers
+    return cache[ glyph ] = ncr._ISL.aggregate ncr.unicode_isl, glyph, reducers
 
 
 ############################################################################################################
