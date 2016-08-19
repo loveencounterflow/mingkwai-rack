@@ -186,7 +186,7 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
     #.......................................................................................................
     # text  = '([Xqf]) ([里䊷䊷里]) ([Xqf])'
     # # text  = 'q里䊷f'
-    for glyph in Array.from '龵⿸釒𤴔丨亅㐅乂'
+    for glyph in Array.from '龵⿸釒金𤴔丨亅㐅乂'
       description = aggregate glyph
       info glyph
       urge '  tag:', ( description[ 'tag' ] ? [ '-/-' ] ).join ', '
