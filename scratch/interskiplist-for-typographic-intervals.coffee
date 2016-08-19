@@ -202,6 +202,27 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
       urge '  blk:', description[ 'tex' ][ 'block'     ] ? '-/-'
       urge '  cp: ', description[ 'tex' ][ 'codepoint' ] ? '-/-'
     #.......................................................................................................
+    # tag = 'sim/is-target/global'
+    tags = [
+      'global'
+      'components'
+      'components/search'
+      'false-identity'
+      ]
+    for tag in tags
+      echo tag
+      search_tag  = "sim/is-target/#{tag}"
+      entry_tag   = "sim/source/#{tag}"
+      for entry in JZRXNCR._ISL.find_entries JZRXNCR.unicode_isl, 'tag', search_tag
+        ### Silently assuming that all relevant entries represent single-character intervals ###
+        target_glyph_info = JZRXNCR.analyze ( cid = entry[ 'lo' ] )
+        target_glyph      = target_glyph_info[ 'uchr' ]
+        target_fncr       = target_glyph_info[ 'fncr' ]
+        source_glyph      = entry[ entry_tag ]
+        source_glyph_info = JZRXNCR.analyze source_glyph
+        source_fncr       = source_glyph_info[ 'fncr' ]
+        echo target_fncr, target_glyph, '<-', source_fncr, source_glyph
+    #.......................................................................................................
     return null
 
 #-----------------------------------------------------------------------------------------------------------
