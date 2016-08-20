@@ -63,16 +63,11 @@ glyph_styles              = mkts_opions[ 'tex' ][ 'glyph-styles'        ]
   ISL = JZRXNCR._ISL
   u   = JZRXNCR.unicode_isl
   #.........................................................................................................
-  $filter_gaiji = =>
-    return $ ( record, send ) =>
-      { source_glyph_realm
-        target_glyph_realm  } = record
-      send record if ( source_glyph_realm is 'inner' ) and ( target_glyph_realm is 'inner' )
-  #.........................................................................................................
-  $add_intervals = =>
+  $add_intervals = ( S ) =>
     return $ ( record ) =>
       { source_glyph
         target_glyph  } = record
+      # debug '3334', record
       source_cid        = JZRXNCR.as_cid record[ 'source_glyph' ]
       target_cid        = JZRXNCR.as_cid record[ 'target_glyph' ]
       otag              = record[ 'tag' ]
@@ -84,25 +79,25 @@ glyph_styles              = mkts_opions[ 'tex' ][ 'glyph-styles'        ]
       ctag              = "sim sim/has-source sim/is-target sim/has-source/#{otag} sim/is-target/#{otag} sim/#{otag}"
       # sim               = { "#{otag}": { source: source_glyph, }, }
       ISL.add u, { lo: target_cid, hi: target_cid, "#{mtag}": source_glyph, tag: ctag, }
+      return null
   #.........................................................................................................
-  $collect_tags = =>
+  $collect_tags = ( S ) =>
     tags = new Set
     return $ 'null', ( record ) =>
       if record? then tags.add record[ 'tag' ]
       else debug '3334', tags
-  $finalize = => $ 'finish', handler
+      return null
   #.........................................................................................................
-  step ( resume ) =>
-    SIMS          = require '../../jizura-db-feeder/lib/feed-sims'
-    ### TAINT should use `jizura-db-feeder` method ###
-    S             = {}
-    S.db          = null
-    S.raw_output  = D.new_stream pipeline: [ $filter_gaiji(), $add_intervals(), $collect_tags(), $finalize() ]
-    # S.raw_output  = D.new_stream pipeline: [ $filter_gaiji(), $add_intervals(), $finalize() ]
-    S.source_home = PATH.resolve __dirname, '../..',  'jizura-datasources/data/flat-files/'
-    yield SIMS.feed S, resume
-    handler()
-    return null
+  SIMS          = require '../jizura-db-feeder/lib/feed-sims'
+  ### TAINT should use `jizura-db-feeder` method ###
+  S             = {}
+  S.db          = null
+  S.source_home = PATH.resolve __dirname, '../..',  'jizura-datasources/data/flat-files/'
+  input         = SIMS.new_sim_readstream S, filter: yes
+  #.........................................................................................................
+  input
+    .pipe $add_intervals S
+    .pipe $ 'finish', handler
   #.........................................................................................................
   return null
 
@@ -235,5 +230,17 @@ glyph_style_as_tex = ( glyph, glyph_style ) ->
 
 ############################################################################################################
 unless module.parent?
-  @demo()
+  # @demo()
+  NCR = require 'ncr'
+  isl = NCR._ISL.new()
+  NCR._ISL.add_index isl, 'tag'
+  NCR._ISL.add isl, { lo: 'a', hi: 'c', }
+  urge isl
+  help {
+    'index-keys': ( key for key of isl[ 'indexes' ] )
+    'entries':    ( entry for _, entry of isl[ 'entry-by-ids' ] )
+    }
+
+
+
 

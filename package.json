@@ -22,7 +22,7 @@
   "dependencies": {
     "cnd": "^4.1.2",
     "coffeenode-suspend": "^0.1.11",
-    "ncr": "^0.2.11",
+    "ncr": "^0.2.13",
     "pipedreams": "^4.2.3"
   }
 }
