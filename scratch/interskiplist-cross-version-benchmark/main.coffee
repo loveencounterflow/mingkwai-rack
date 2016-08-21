@@ -46,19 +46,30 @@ now                       = -> +new Date()
 #-----------------------------------------------------------------------------------------------------------
 @get_memoizing_aggregate = ( ISL, isl ) ->
   cache = {}
-  return ( chr ) ->
+  R = ( chr ) ->
     return R if ( R = cache[ chr ] )?
     return cache[ chr ] = ISL.aggregate isl, chr
+  get_cache_size = -> ( Object.keys cache ).length
+  return [ R, get_cache_size, ]
 
 
 #===========================================================================================================
 #
 #-----------------------------------------------------------------------------------------------------------
 @benchmark = ( ISL, mode ) ->
-  key         = "ISL v#{ISL[ σ_version ]}"
-  isl         = @get_unicode_isl ISL
-  µ_aggregate = if mode is 'memoized' then ( @get_memoizing_aggregate ISL, isl ) else null
-  t0          = now()
+  isl = @get_unicode_isl ISL
+  switch mode
+    when 'plain'
+      sub_key     = 'unmemoized'
+      µ_aggregate = null
+    when 'memoized'
+      sub_key             = '  memoized'
+      [ µ_aggregate
+        get_cache_size  ] = @get_memoizing_aggregate ISL, isl
+    else throw new Error "unknown mode #{rpr mode}"
+  #.........................................................................................................
+  key = "ISL v#{ISL[ σ_version ]} #{sub_key}"
+  t0  = now()
   #.........................................................................................................
   switch mode
     when 'plain'
@@ -67,7 +78,7 @@ now                       = -> +new Date()
     when 'memoized'
       for chr in chrs
         x = µ_aggregate chr
-    else throw new Error "unknown mode #{rpr mode}"
+      help "cache size:", CND.format_number get_cache_size()
   #.........................................................................................................
   t1            = now()
   dt            = ( t1 - t0 ) / 1000
