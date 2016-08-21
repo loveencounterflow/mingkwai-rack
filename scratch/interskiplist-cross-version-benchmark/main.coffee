@@ -34,35 +34,53 @@ now                       = -> +new Date()
 
 #-----------------------------------------------------------------------------------------------------------
 @get_unicode_isl = ( ISL ) ->
-  key = "read Unicode data for ISL v#{ISL[ σ_version ]}"
-  console.time key
+  # key = "read Unicode data for ISL v#{ISL[ σ_version ]}"
+  # console.time key
   R = ISL.new()
   ISL.add_index R, 'rsg'
   ISL.add_index R, 'tag'
   ISL.add R, interval for interval in require isl_path
-  console.timeEnd key
+  # console.timeEnd key
   return R
+
+#-----------------------------------------------------------------------------------------------------------
+@get_memoizing_aggregate = ( ISL, isl ) ->
+  cache = {}
+  return ( chr ) ->
+    return R if ( R = cache[ chr ] )?
+    return cache[ chr ] = ISL.aggregate isl, chr
+
 
 #===========================================================================================================
 #
 #-----------------------------------------------------------------------------------------------------------
-@benchmark = ( ISL ) ->
-  key = "ISL v#{ISL[ σ_version ]}"
-  @get_unicode_isl ISL
-  t0 = now()
+@benchmark = ( ISL, mode ) ->
+  key         = "ISL v#{ISL[ σ_version ]}"
+  isl         = @get_unicode_isl ISL
+  µ_aggregate = if mode is 'memoized' then ( @get_memoizing_aggregate ISL, isl ) else null
+  t0          = now()
   #.........................................................................................................
-  for chr in chrs
-    ISL.aggregate chr
+  switch mode
+    when 'plain'
+      for chr in chrs
+        x = ISL.aggregate isl, chr
+    when 'memoized'
+      for chr in chrs
+        x = µ_aggregate chr
+    else throw new Error "unknown mode #{rpr mode}"
   #.........................................................................................................
-  t1        = now()
-  dt        = ( t1 - t0 ) / 1000
-  tpc       = chrs.length / dt
-  chr_count = chrs.length
-  help "#{key} aggregated #{chr_count} chrs in #{dt}ms (#{tpc.toFixed 3}cps)"
+  t1            = now()
+  dt            = ( t1 - t0 ) / 1000
+  chr_count     = chrs.length
+  chr_count_txt = CND.format_number chr_count
+  cps           = chr_count / dt
+  cps_txt       = CND.format_number Math.floor cps + 0.5
+  help "#{key} aggregated #{chr_count_txt} chrs in #{dt} s (#{cps_txt} cps)"
   #.........................................................................................................
   return null
 
 ############################################################################################################
 unless module.parent?
-  @benchmark NEW_ISL
+  @benchmark NEW_ISL, 'plain'
+  @benchmark NEW_ISL, 'memoized'
 
