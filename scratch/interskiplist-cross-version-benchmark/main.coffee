@@ -19,8 +19,10 @@ urge                      = CND.get_logger 'urge',      badge
 echo                      = CND.echo.bind CND
 #...........................................................................................................
 σ_version                 = Symbol.for 'version'
-NEW_ISL                   = require 'interskiplist'
+NEW_ISL                   = require '../../node_modules/interskiplist'
 NEW_ISL[ σ_version ]      = ( require 'interskiplist/package.json' )[ 'version' ]
+OLD_ISL                   = require './node_modules/interskiplist'
+OLD_ISL[ σ_version ]      = ( require 'interskiplist/package.json' )[ 'version' ]
 #...........................................................................................................
 text_path                 = PATH.resolve __dirname, './text.txt'
 text                      = FS.readFileSync text_path, encoding: 'utf-8'
@@ -37,8 +39,8 @@ now                       = -> +new Date()
   # key = "read Unicode data for ISL v#{ISL[ σ_version ]}"
   # console.time key
   R = ISL.new()
-  ISL.add_index R, 'rsg'
-  ISL.add_index R, 'tag'
+  # ISL.add_index R, 'rsg'
+  # ISL.add_index R, 'tag'
   ISL.add R, interval for interval in require isl_path
   # console.timeEnd key
   return R
@@ -94,4 +96,6 @@ now                       = -> +new Date()
 unless module.parent?
   @benchmark NEW_ISL, 'plain'
   @benchmark NEW_ISL, 'memoized'
+  @benchmark OLD_ISL, 'plain'
+  @benchmark OLD_ISL, 'memoized'
 
