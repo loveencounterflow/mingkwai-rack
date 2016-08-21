@@ -28,10 +28,13 @@ chrs                      = CND.shuffle Array.from text
 #...........................................................................................................
 isl_path                  = PATH.resolve __dirname, '../../node_modules/ncr/data/unicode-9.0.0-intervals.json'
 debug isl_path
+#...........................................................................................................
+now                       = -> +new Date()
+
 
 #-----------------------------------------------------------------------------------------------------------
 @get_unicode_isl = ( ISL ) ->
-  key = "reading Unicode data for ISL v#{ISL[ σ_version ]}"
+  key = "read Unicode data for ISL v#{ISL[ σ_version ]}"
   console.time key
   R = ISL.new()
   ISL.add_index R, 'rsg'
@@ -46,10 +49,17 @@ debug isl_path
 @benchmark = ( ISL ) ->
   key = "ISL v#{ISL[ σ_version ]}"
   @get_unicode_isl ISL
-  console.time key
+  t0 = now()
   #.........................................................................................................
+  for chr in chrs
+    ISL.aggregate chr
   #.........................................................................................................
-  console.timeEnd key
+  t1        = now()
+  dt        = ( t1 - t0 ) / 1000
+  tpc       = chrs.length / dt
+  chr_count = chrs.length
+  help "#{key} aggregated #{chr_count} chrs in #{dt}ms (#{tpc.toFixed 3}cps)"
+  #.........................................................................................................
   return null
 
 ############################################################################################################
