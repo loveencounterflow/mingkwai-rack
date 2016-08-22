@@ -21,6 +21,8 @@
   "homepage": "https://github.com/loveencounterflow/mingkwai-rack#readme",
   "dependencies": {
     "cnd": "^4.1.2",
-    "ncr": "^0.2.10"
+    "coffeenode-suspend": "^0.1.11",
+    "ncr": "^0.2.13",
+    "pipedreams": "^4.2.3"
   }
 }
