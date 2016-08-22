@@ -19,10 +19,14 @@ urge                      = CND.get_logger 'urge',      badge
 echo                      = CND.echo.bind CND
 #...........................................................................................................
 σ_version                 = Symbol.for 'version'
-NEW_ISL                   = require '../../node_modules/interskiplist'
-NEW_ISL[ σ_version ]      = ( require 'interskiplist/package.json' )[ 'version' ]
-OLD_ISL                   = require './node_modules/interskiplist'
-OLD_ISL[ σ_version ]      = ( require 'interskiplist/package.json' )[ 'version' ]
+#...........................................................................................................
+library_path              = PATH.resolve __dirname, '../../node_modules/interskiplist'
+NEW_ISL                   = require library_path
+NEW_ISL[ σ_version ]      = ( require PATH.resolve library_path, 'package.json' )[ 'version' ]
+#...........................................................................................................
+library_path              = PATH.resolve __dirname, './node_modules/interskiplist'
+OLD_ISL                   = require library_path
+OLD_ISL[ σ_version ]      = ( require PATH.resolve library_path, 'package.json' )[ 'version' ]
 #...........................................................................................................
 text_path                 = PATH.resolve __dirname, './text.txt'
 text                      = FS.readFileSync text_path, encoding: 'utf-8'
@@ -36,13 +40,8 @@ now                       = -> +new Date()
 
 #-----------------------------------------------------------------------------------------------------------
 @get_unicode_isl = ( ISL ) ->
-  # key = "read Unicode data for ISL v#{ISL[ σ_version ]}"
-  # console.time key
   R = ISL.new()
-  # ISL.add_index R, 'rsg'
-  # ISL.add_index R, 'tag'
   ISL.add R, interval for interval in require isl_path
-  # console.timeEnd key
   return R
 
 #-----------------------------------------------------------------------------------------------------------
@@ -58,12 +57,22 @@ now                       = -> +new Date()
 #===========================================================================================================
 # BENCHMARK
 #-----------------------------------------------------------------------------------------------------------
-@benchmark = ( ISL, mode ) ->
-  isl = @get_unicode_isl ISL
+@benchmark = ( ISL ) ->
+  info '-'.repeat 108
+  for mode in [ 'plain', 'memoized', ]
+    @_benchmark ISL, mode
+  #.........................................................................................................
+  return null
+
+#-----------------------------------------------------------------------------------------------------------
+@_benchmark = ( ISL, mode ) ->
+  isl             = @get_unicode_isl ISL
+  get_cache_size  = null
+  µ_aggregate     = null
+  #.........................................................................................................
   switch mode
     when 'plain'
       sub_key     = 'unmemoized'
-      µ_aggregate = null
     when 'memoized'
       sub_key             = '  memoized'
       [ µ_aggregate
@@ -80,7 +89,6 @@ now                       = -> +new Date()
     when 'memoized'
       for chr in chrs
         x = µ_aggregate chr
-      help "cache size:", CND.format_number get_cache_size()
   #.........................................................................................................
   t1            = now()
   dt            = ( t1 - t0 ) / 1000
@@ -88,14 +96,14 @@ now                       = -> +new Date()
   chr_count_txt = CND.format_number chr_count
   cps           = chr_count / dt
   cps_txt       = CND.format_number Math.floor cps + 0.5
+  whisper "cache size:", CND.format_number get_cache_size() if get_cache_size?
   help "#{key} aggregated #{chr_count_txt} chrs in #{dt} s (#{cps_txt} cps)"
   #.........................................................................................................
   return null
 
+
 ############################################################################################################
 unless module.parent?
-  @benchmark NEW_ISL, 'plain'
-  @benchmark NEW_ISL, 'memoized'
-  @benchmark OLD_ISL, 'plain'
-  @benchmark OLD_ISL, 'memoized'
+  @benchmark NEW_ISL
+  @benchmark OLD_ISL
 
