@@ -22,3 +22,7 @@ Experimental 'frame app' (or is it an 'app frame'?)
 └── texts
 ```
 
+ln -s mingkwai-rack/jizura-fonts
+ln -s mingkwai-rack/mingkwai
+ln -s mingkwai-rack/mingkwai-ncr
+ln -s mingkwai-rack/mingkwai-typesetter-jizura
