@@ -23,6 +23,6 @@
     "cnd": "^4.1.5",
     "coffeenode-suspend": "^0.1.11",
     "ncr": "^0.2.14",
-    "pipedreams": "^4.2.3"
+    "pipedreams": "^5.0.0"
   }
 }
