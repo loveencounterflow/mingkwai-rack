@@ -26,3 +26,18 @@ ln -s mingkwai-rack/jizura-fonts
 ln -s mingkwai-rack/mingkwai
 ln -s mingkwai-rack/mingkwai-ncr
 ln -s mingkwai-rack/mingkwai-typesetter-jizura
+
+## Tasks
+
+Rewrite MingKwai NCR (MKNCR) cache:
+
+```coffee
+( cd mingkwai-ncr && npm run build && node lib/main.js )
+```
+
+
+
+
+
+
+
