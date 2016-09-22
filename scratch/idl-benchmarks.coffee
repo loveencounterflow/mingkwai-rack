@@ -38,34 +38,42 @@ fetch_probes = ( handler ) ->
   input = D.new_stream 'lines', { path, }
   D.tap input, 1 / 10, seed: 11, ( error, lines ) ->
     return handler error if error?
-    for line, idx in lines
+    Z = []
+    for line in lines
+      continue if line.length is 0
+      continue if ( /^\s*#/ ).test line
       fields        = line.split '\t'
-      lines[ idx ]  = fields[ fields.length - 1 ]
-    handler null, lines
+      Z.push fields[ fields.length - 1 ]
+    handler null, Z
 
 #-----------------------------------------------------------------------------------------------------------
-run = ( L, formulas ) ->
-  count = formulas.length
-  help "parsing #{count} formulas"
+run = ( title, L, formulas ) ->
+  info()
+  info title
+  formula_count = formulas.length
+  error_count   = 0
   t0 = +new Date()
   for formula in formulas
     try
       result = L.parse formula
       # help result
     catch error
-      null
+      error_count += +1
       # warn "#{formula}: #{error[ 'message' ]}"
-  t1  = +new Date()
-  dts = ( t1 - t0 ) / 1000
-  help dts, count / dts
+  t1            = +new Date()
+  dts           = ( t1 - t0 ) / 1000
+  fps           = ( formula_count / dts ).toFixed 2
+  success_rate  = ( ( formula_count - error_count ) / formula_count * 100 ).toFixed 2
+  help dts, "#{fps} fps (#{error_count} errors = #{success_rate}% success)"
 
 #-----------------------------------------------------------------------------------------------------------
 main = ->
   step ( resume ) ->
     formulas = yield fetch_probes resume
-    run IDLX, formulas
-    run FLOWMATIC_IDL, formulas
-    run IDL, formulas
+    help "collected #{formulas.length} formulas"
+    run 'FLOWMATIC_IDL', FLOWMATIC_IDL, formulas
+    run 'IDL',           IDL,           formulas
+    run 'IDLX',          IDLX,          formulas
 
 
 ############################################################################################################
