@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "cnd": "^4.2.0",
+    "coffeenode-suspend": "^0.1.11",
     "pipedreams": "^6.1.0"
   }
 }
