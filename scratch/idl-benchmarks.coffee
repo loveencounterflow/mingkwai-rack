@@ -95,7 +95,7 @@ run = ( title, L, formulas ) ->
       magic 100% figure to indicate full success: ###
       error_count          += +1
       adjusted_error_count += +1 unless formula is '▽'
-      # warn "#{formula}: #{error[ 'message' ]}"
+      echo "#{formula}: #{error[ 'message' ]}"
   t1            = +new Date()
   dts           = ( t1 - t0 ) / 1000
   fps           = ( formula_count / dts ).toFixed 2
@@ -171,8 +171,8 @@ main = ->
   step ( resume ) ->
     formulas = yield fetch_probes resume
     help "collected #{formulas.length} formulas"
-    run 'FLOWMATIC_IDL', FLOWMATIC_IDL, formulas
-    run 'IDL',           IDL,           formulas
+    # run 'FLOWMATIC_IDL', FLOWMATIC_IDL, formulas
+    # run 'IDL',           IDL,           formulas
     run 'IDLX',          IDLX,          formulas
     # compare formulas
 
@@ -211,5 +211,5 @@ unless module.parent?
       # # info unwrap_flowmatic_idl_extra_lists FLOWMATIC_IDL.parse formula
       # urge                                  IDLX.parse          formula
 
-  f()
+  # f()
 
