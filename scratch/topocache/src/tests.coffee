@@ -81,7 +81,7 @@ TC                        = require './main'
   test = ( reference, comparators... ) ->
     throw new Error "need at least one comparator, got none" unless comparators.length > 0
     for comparator in comparators
-      return false if cmp reference, comparator > 0
+      return false if ( cmp reference, comparator ) > 0
     return true
 
   #.........................................................................................................
