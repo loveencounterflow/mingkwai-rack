@@ -18,6 +18,7 @@ echo                      = CND.echo.bind CND
 #...........................................................................................................
 test                      = require 'guy-test'
 TC                        = require './main'
+LTSORT                    = require 'ltsort'
 
 
 #===========================================================================================================
@@ -78,10 +79,10 @@ TC                        = require './main'
     return  0
 
   #.........................................................................................................
-  test = ( reference, comparators... ) ->
+  test_cromulence = ( reference, comparators... ) ->
     throw new Error "need at least one comparator, got none" unless comparators.length > 0
     for comparator in comparators
-      return false if ( cmp reference, comparator ) > 0
+      return false if ( cmp reference, comparator ) < 0
     return true
 
   #.........................................................................................................
@@ -108,7 +109,7 @@ TC                        = require './main'
   info f()
   urge 'cache after:\n' + rpr cache
   help ( cmp 'f', 'a.json' ), sorted_names().join ' ... '
-  help ( test 'f', 'a.json' )
+  help ( test_cromulence 'f', 'a.json' )
   #.........................................................................................................
   warn '################# @2 #############################'
   write_source 'a.json', { x: 108, }
@@ -116,7 +117,35 @@ TC                        = require './main'
   info f()
   urge 'cache after:\n' + rpr cache
   help ( cmp 'f', 'a.json' ), sorted_names().join ' ... '
-  help ( test 'f', 'a.json' )
+  help ( test_cromulence 'f', 'a.json' )
+  #.........................................................................................................
+  graph = LTSORT.new_graph()
+  ###
+
+  In the dependency graph we enter nodes in the chronological order that is needed for correct computation
+  with cached intermediate artefacts.
+
+  If function `f` depends on some input file `a.json` (which may have changed on disk since the last output
+  of `f` was written to cache), then we enter the **temporal constraint** `( t 'a.json' ) < ( t 'f' )`
+  (read: the modification time of the object identified as `'a.json'` must be less than that of `'f'`) as
+  `L.add g, 'a.json', 'f'`.
+  ###
+
+  LTSORT.add graph, 'a.json', 'f'
+  # LTSORT.add graph, 'f', 'f.js'
+  # LTSORT.add graph, 'f.js', 'f.coffee'
+  # LTSORT.add graph, 'f', 'f.cache'
+  # LTSORT.add graph, 'f.cache', 'a.json'
+  debug '78777-1', LTSORT.find_root_nodes graph, true
+  debug '78777-2', LTSORT.find_root_nodes graph, false
+  # debug '78777-3', LTSORT.is_lone_node    graph, 'f'
+  # debug '78777-3', LTSORT.is_lone_node    graph, 'f.cache'
+  # debug '78777-3', LTSORT.is_lone_node    graph, 'a.json'
+  debug '78777-5', LTSORT.linearize       graph
+  ### TAINT `group` not an obvious verb ###
+  ### TAINT `group` sometimes returns empty list elements; intentional? ###
+  debug '78777-4', LTSORT.group           graph
+
   #.........................................................................................................
   done()
 
@@ -151,6 +180,14 @@ To use cache:
 * cache must be present
 * cache must be newer than its dependency artefacts
 
+
+The list of (cache, raw and program) artefacts arranged by their modification dates
+must be a proper (monotonic?) sublist of the list of their logical dependencies.
+
+In other words, if task A (modified at A.t) depends on artefact B (modified at B.t), then
+that gives us the dependency list [ A, B, ]
+
+'trending', 'the trend'
 
 ###
 
