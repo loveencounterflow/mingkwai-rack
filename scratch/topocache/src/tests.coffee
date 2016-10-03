@@ -71,10 +71,18 @@ TC                        = require './main'
 
   #.........................................................................................................
   cmp = ( name_a, name_b ) ->
-    debug '44535', name_a, name_b
-    return -1 if cache[ name_a ].t < cache[ name_b ].t
-    return +1 if cache[ name_a ].t > cache[ name_b ].t
+    throw new Error "unknown name #{rpr name_a}" unless ( entry_a = cache[ name_a ] )?
+    throw new Error "unknown name #{rpr name_b}" unless ( entry_b = cache[ name_b ] )?
+    return -1 if entry_a.t < entry_b.t
+    return +1 if entry_a.t > entry_b.t
     return  0
+
+  #.........................................................................................................
+  test = ( reference, comparators... ) ->
+    throw new Error "need at least one comparator, got none" unless comparators.length > 0
+    for comparator in comparators
+      return false if cmp reference, comparator > 0
+    return true
 
   #.........................................................................................................
   sorted_names = ->
@@ -100,6 +108,7 @@ TC                        = require './main'
   info f()
   urge 'cache after:\n' + rpr cache
   help ( cmp 'f', 'a.json' ), sorted_names().join ' ... '
+  help ( test 'f', 'a.json' )
   #.........................................................................................................
   warn '################# @2 #############################'
   write_source 'a.json', { x: 108, }
@@ -107,6 +116,7 @@ TC                        = require './main'
   info f()
   urge 'cache after:\n' + rpr cache
   help ( cmp 'f', 'a.json' ), sorted_names().join ' ... '
+  help ( test 'f', 'a.json' )
   #.........................................................................................................
   done()
 
@@ -136,6 +146,10 @@ unless module.parent?
 
 * In-Memory Caches
 
+To use cache:
+
+* cache must be present
+* cache must be newer than its dependency artefacts
 
 
 ###
