@@ -43,12 +43,12 @@ LTSORT                    = require 'ltsort'
 # TESTS
 #-----------------------------------------------------------------------------------------------------------
 @[ "demo" ] = ( T, done ) ->
-  # graph = TC.new_graph loners: no
+  # chart = TC.new_graph loners: no
   # #.........................................................................................................
-  # TC.add graph, 'db-empty',       'db-complete'
-  # TC.add graph, 'formulas',       'xxx'
-  # TC.add graph, 'sims',           'xxx'
-  # TC.add graph, 'variantusage',   'xxx'
+  # TC.add chart, 'db-empty',       'db-complete'
+  # TC.add chart, 'formulas',       'xxx'
+  # TC.add chart, 'sims',           'xxx'
+  # TC.add chart, 'variantusage',   'xxx'
 
   #.........................................................................................................
   cache       = {}
@@ -86,14 +86,30 @@ LTSORT                    = require 'ltsort'
     return true
 
   #.........................................................................................................
-  sorted_names = ->
-    R = Object.keys cache
-    R.sort cmp
+  get_trend = ->
+    R         = []
+    collector = {}
+    ( collector[ entry.t ] ?= [] ).push name for name, entry of cache
+    R.push collector[ t ] for t in ( Object.keys collector ).sort()
+    return R
+
+  #.........................................................................................................
+  index_time_series = ( time_series ) ->
+    R     = {}
+    for box, idx in time_series
+      R[ name ] = idx for name in box
     return R
 
   #.........................................................................................................
   read_source   = ( name        ) -> debug name, read name; JSON.parse read name
   write_source  = ( name, value ) -> write name, JSON.stringify value
+
+  #.........................................................................................................
+  register = ( me, precedent, consequent, remedy ) ->
+    key             = "#{consequent} -> #{precedent}"
+    remedies        = me[ 'remedies' ] ?= {}
+    remedies[ key ] = remedy
+    return LTSORT.add me, precedent, consequent
 
   #.........................................................................................................
   fc  = -> read  'f'
@@ -103,26 +119,10 @@ LTSORT                    = require 'ltsort'
     return fp()
 
   #.........................................................................................................
-  warn '################# @1 #############################'
-  write_source 'a.json', { x: 42, }
-  urge 'cache before:\n' + rpr cache
-  info f()
-  urge 'cache after:\n' + rpr cache
-  help ( cmp 'f', 'a.json' ), sorted_names().join ' ... '
-  help ( test_cromulence 'f', 'a.json' )
-  #.........................................................................................................
-  warn '################# @2 #############################'
-  write_source 'a.json', { x: 108, }
-  urge 'cache before:\n' + rpr cache
-  info f()
-  urge 'cache after:\n' + rpr cache
-  help ( cmp 'f', 'a.json' ), sorted_names().join ' ... '
-  help ( test_cromulence 'f', 'a.json' )
-  #.........................................................................................................
-  graph = LTSORT.new_graph()
+  chart = LTSORT.new_graph loners: no
   ###
 
-  In the dependency graph we enter nodes in the chronological order that is needed for correct computation
+  In the dependency chart we enter nodes in the chronological order that is needed for correct computation
   with cached intermediate artefacts.
 
   If function `f` depends on some input file `a.json` (which may have changed on disk since the last output
@@ -130,22 +130,46 @@ LTSORT                    = require 'ltsort'
   (read: the modification time of the object identified as `'a.json'` must be less than that of `'f'`) as
   `L.add g, 'a.json', 'f'`.
   ###
-
-  LTSORT.add graph, 'a.json', 'f'
-  # LTSORT.add graph, 'f', 'f.js'
-  # LTSORT.add graph, 'f.js', 'f.coffee'
-  # LTSORT.add graph, 'f', 'f.cache'
-  # LTSORT.add graph, 'f.cache', 'a.json'
-  debug '78777-1', LTSORT.find_root_nodes graph, true
-  debug '78777-2', LTSORT.find_root_nodes graph, false
-  # debug '78777-3', LTSORT.is_lone_node    graph, 'f'
-  # debug '78777-3', LTSORT.is_lone_node    graph, 'f.cache'
-  # debug '78777-3', LTSORT.is_lone_node    graph, 'a.json'
-  debug '78777-5', LTSORT.linearize       graph
+  register chart, 'a.json',   'f',        '???'
+  register chart, 'f',        'f.js',     '???'
+  register chart, 'f.coffee', 'f.js',     "coffee -o lib -c src"
+  register chart, 'f',        'f.cache',  '???'
+  # register chart, 'f.cache', 'a.json', '???'
+  # debug '78777-1', LTSORT.find_root_nodes chart, true
+  # debug '78777-2', LTSORT.find_root_nodes chart, false
+  # debug '78777-3', LTSORT.is_lone_node    chart, 'f'
+  # debug '78777-3', LTSORT.is_lone_node    chart, 'f.cache'
+  # debug '78777-3', LTSORT.is_lone_node    chart, 'a.json'
+  debug '78777-5', LTSORT.linearize       chart
   ### TAINT `group` not an obvious verb ###
   ### TAINT `group` sometimes returns empty list elements; intentional? ###
-  debug '78777-4', LTSORT.group           graph
-
+  debug '78777-4', LTSORT.group           chart
+  help chart
+  #.........................................................................................................
+  write 'f.coffee', "### some CS here ###"
+  write 'f.js',     "/* some JS here */"
+  warn '################# @1 #############################'
+  write_source 'a.json', { x: 42, }
+  urge 'cache before:\n' + rpr cache
+  info f()
+  urge 'cache after:\n' + rpr cache
+  # help ( cmp 'f', 'a.json' )
+  help get_trend()
+  help index_time_series get_trend()
+  help index_time_series LTSORT.group chart
+  help ( test_cromulence 'f', 'a.json' )
+  #.........................................................................................................
+  warn '################# @2 #############################'
+  write 'f.coffee', "### some modified CS here ###"
+  write_source 'a.json', { x: 108, }
+  urge 'cache before:\n' + rpr cache
+  info f()
+  urge 'cache after:\n' + rpr cache
+  # help ( cmp 'f', 'a.json' )
+  help get_trend()
+  help index_time_series get_trend()
+  help index_time_series LTSORT.group chart
+  help ( test_cromulence 'f', 'a.json' )
   #.........................................................................................................
   done()
 
@@ -188,6 +212,15 @@ In other words, if task A (modified at A.t) depends on artefact B (modified at B
 that gives us the dependency list [ A, B, ]
 
 'trending', 'the trend'
+'drifting', 'the drift'
+'the course'
+'the chart'
+
+dependency list vs timeline
+chart vs trend
+?chart vs drift
+
+
 
 ###
 
