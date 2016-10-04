@@ -126,7 +126,7 @@ LTSORT                    = require 'ltsort'
           continue
         debug '33421', ref_name, ref_charting_idx, ref_trending_idx, cmp_name, cmp_charting_idx, cmp_trending_idx
         unless ref_trending_idx > cmp_trending_idx
-          warn ref_name, cmp_name
+          warn ref_name, cmp_name, get_remedy
     #.......................................................................................................
     return null
 
@@ -142,6 +142,12 @@ LTSORT                    = require 'ltsort'
     return LTSORT.add me, precedent, consequent
 
   #.........................................................................................................
+  get_remedy = ( me, precedent, consequent ) ->
+    key = "#{consequent} -> #{precedent}"
+    throw new Error "no remedy for #{rp key}" unless ( R = me[ 'remedies' ][ key ] )?
+    return R
+
+  #.........................................................................................................
   fc  = -> read  'f'
   fp  = -> write 'f', ( read_source 'a.json' )[ 'x' ] + 3
   f   = ->
@@ -149,7 +155,7 @@ LTSORT                    = require 'ltsort'
     return fp()
 
   #.........................................................................................................
-  chart = LTSORT.new_graph loners: no
+  chart_graph = LTSORT.new_graph loners: no
   ###
 
   In the dependency chart we enter nodes in the chronological order that is needed for correct computation
@@ -160,21 +166,21 @@ LTSORT                    = require 'ltsort'
   (read: the modification time of the object identified as `'a.json'` must be less than that of `'f'`) as
   `L.add g, 'a.json', 'f'`.
   ###
-  # register chart, 'a.json',   'f',        '???'
-  # register chart, 'f',        'f.js',     '???'
-  register chart, 'f.coffee', 'f.js',     "coffee -o lib -c src"
-  register chart, 'f.js',     'a.json',   '???'
-  # register chart, 'f.cache', 'a.json', '???'
-  # debug '78777-1', LTSORT.find_root_nodes chart, true
-  # debug '78777-2', LTSORT.find_root_nodes chart, false
-  # debug '78777-3', LTSORT.is_lone_node    chart, 'f'
-  # debug '78777-3', LTSORT.is_lone_node    chart, 'f.cache'
-  # debug '78777-3', LTSORT.is_lone_node    chart, 'a.json'
-  debug '78777-5', LTSORT.linearize       chart
+  # register chart_graph, 'a.json',   'f',        '???'
+  # register chart_graph, 'f',        'f.js',     '???'
+  register chart_graph, 'f.coffee', 'f.js',     "coffee -o lib -c src"
+  register chart_graph, 'f.js',     'a.json',   '???'
+  # register chart_graph, 'f.cache', 'a.json', '???'
+  # debug '78777-1', LTSORT.find_root_nodes chart_graph, true
+  # debug '78777-2', LTSORT.find_root_nodes chart_graph, false
+  # debug '78777-3', LTSORT.is_lone_node    chart_graph, 'f'
+  # debug '78777-3', LTSORT.is_lone_node    chart_graph, 'f.cache'
+  # debug '78777-3', LTSORT.is_lone_node    chart_graph, 'a.json'
+  debug '78777-5', LTSORT.linearize       chart_graph
   ### TAINT `group` not an obvious verb ###
   ### TAINT `group` sometimes returns empty list elements; intentional? ###
-  debug '78777-4', LTSORT.group           chart
-  help chart
+  debug '78777-4', LTSORT.group           chart_graph
+  help chart_graph
   #.........................................................................................................
   write 'f.coffee', "### some CS here ###"
   write 'f.js',     "/* some JS here */"
@@ -185,10 +191,10 @@ LTSORT                    = require 'ltsort'
   # urge 'cache after:\n' + rpr cache
   # help ( cmp 'f', 'a.json' )
   help ( test_cromulence 'f', 'a.json' )
-  help "boxed chart:", LTSORT.group chart
+  help "boxed chart:", LTSORT.group chart_graph
   help "boxed trend:", get_trend()
   help indexed_trend = indexed_from_boxed_series get_trend()
-  help indexed_chart = indexed_from_boxed_series LTSORT.group chart
+  help indexed_chart = indexed_from_boxed_series LTSORT.group chart_graph
   urge find_faults indexed_chart, indexed_trend
   #.........................................................................................................
   warn '################# @2 #############################'
@@ -199,10 +205,10 @@ LTSORT                    = require 'ltsort'
   # urge 'cache after:\n' + rpr cache
   # help ( cmp 'f', 'a.json' )
   help ( test_cromulence 'f', 'a.json' )
-  help "boxed chart:", LTSORT.group chart
+  help "boxed chart:", LTSORT.group chart_graph
   help "boxed trend:", get_trend()
   help indexed_trend = indexed_from_boxed_series get_trend()
-  help indexed_chart = indexed_from_boxed_series LTSORT.group chart
+  help indexed_chart = indexed_from_boxed_series LTSORT.group chart_graph
   urge find_faults indexed_chart, indexed_trend
   #.........................................................................................................
   done()
