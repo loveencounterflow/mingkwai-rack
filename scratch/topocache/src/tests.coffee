@@ -101,7 +101,12 @@ LTSORT                    = require 'ltsort'
     return R
 
   #.........................................................................................................
-  find_faults = ( me, indexed_chart, indexed_trend ) ->
+  find_first_fault = ( me, indexed_chart, indexed_trend ) ->
+    return find_faults me, indexed_chart, indexed_trend, yes
+
+  #.........................................................................................................
+  find_faults = ( me, indexed_chart, indexed_trend, first_only = no ) ->
+    R = if first_only then null else []
     #.......................................................................................................
     messages = {}
     warn_missing = ( name ) ->
@@ -119,16 +124,24 @@ LTSORT                    = require 'ltsort'
       for cmp_name, cmp_charting_idx of indexed_chart
         ### skip entry for reference item in comparisons: ###
         continue if ref_name          is cmp_name
-        ### skip entries that have the same charting index: ###
+        ### skip entries that have the same or smaller charting index (that are not depenedent on
+        reference): ###
         continue if ref_charting_idx  <= cmp_charting_idx
         unless ( cmp_trending_idx = indexed_trend[ cmp_name ] )?
           warn_missing cmp_name
           continue
-        debug '33421', ref_name, ref_charting_idx, ref_trending_idx, cmp_name, cmp_charting_idx, cmp_trending_idx
+        ### a fault is indicated by the trending index being in violation of the dependency relation
+        as expressed by the charting index: ###
         unless ref_trending_idx > cmp_trending_idx
-          warn ref_name, cmp_name, get_remedy me, cmp_name, ref_name
+          remedy = get_remedy me, cmp_name, ref_name
+          entry =
+            reference:  ref_name
+            comparison: cmp_name
+            remedy:     remedy
+          return entry if first_only
+          R.push entry
     #.......................................................................................................
-    return null
+    return R
 
   #.........................................................................................................
   read_source   = ( name        ) -> debug name, read name; JSON.parse read name
@@ -196,6 +209,7 @@ LTSORT                    = require 'ltsort'
   help indexed_trend = indexed_from_boxed_series get_trend()
   help indexed_chart = indexed_from_boxed_series LTSORT.group chart_graph
   urge find_faults chart_graph, indexed_chart, indexed_trend
+  warn find_first_fault chart_graph, indexed_chart, indexed_trend
   #.........................................................................................................
   warn '################# @2 #############################'
   write 'f.coffee', "### some modified CS here ###"
@@ -210,6 +224,7 @@ LTSORT                    = require 'ltsort'
   help indexed_trend = indexed_from_boxed_series get_trend()
   help indexed_chart = indexed_from_boxed_series LTSORT.group chart_graph
   urge find_faults chart_graph, indexed_chart, indexed_trend
+  warn find_first_fault chart_graph, indexed_chart, indexed_trend
   #.........................................................................................................
   done()
 
