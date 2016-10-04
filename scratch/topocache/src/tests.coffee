@@ -101,7 +101,7 @@ LTSORT                    = require 'ltsort'
     return R
 
   #.........................................................................................................
-  find_faults = ( indexed_chart, indexed_trend ) ->
+  find_faults = ( me, indexed_chart, indexed_trend ) ->
     #.......................................................................................................
     messages = {}
     warn_missing = ( name ) ->
@@ -126,7 +126,7 @@ LTSORT                    = require 'ltsort'
           continue
         debug '33421', ref_name, ref_charting_idx, ref_trending_idx, cmp_name, cmp_charting_idx, cmp_trending_idx
         unless ref_trending_idx > cmp_trending_idx
-          warn ref_name, cmp_name, get_remedy
+          warn ref_name, cmp_name, get_remedy me, cmp_name, ref_name
     #.......................................................................................................
     return null
 
@@ -195,7 +195,7 @@ LTSORT                    = require 'ltsort'
   help "boxed trend:", get_trend()
   help indexed_trend = indexed_from_boxed_series get_trend()
   help indexed_chart = indexed_from_boxed_series LTSORT.group chart_graph
-  urge find_faults indexed_chart, indexed_trend
+  urge find_faults chart_graph, indexed_chart, indexed_trend
   #.........................................................................................................
   warn '################# @2 #############################'
   write 'f.coffee', "### some modified CS here ###"
@@ -209,7 +209,7 @@ LTSORT                    = require 'ltsort'
   help "boxed trend:", get_trend()
   help indexed_trend = indexed_from_boxed_series get_trend()
   help indexed_chart = indexed_from_boxed_series LTSORT.group chart_graph
-  urge find_faults indexed_chart, indexed_trend
+  urge find_faults chart_graph, indexed_chart, indexed_trend
   #.........................................................................................................
   done()
 
