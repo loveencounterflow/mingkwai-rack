@@ -51,29 +51,40 @@ LTSORT                    = require 'ltsort'
   # TC.add chart, 'variantusage',   'xxx'
 
   #.........................................................................................................
-  cache       = {}
   [ t0s, _, ] = process.hrtime()
 
   #.........................................................................................................
-  now = ->
+  # FILE SYSTEM SIMULATOR
+  #.........................................................................................................
+  FS        = {}
+  FS.cache  = {}
+
+  #.........................................................................................................
+  FS._now = ->
     [ t1s, t1n, ] = process.hrtime()
     return ( t1s - t0s ) * 1e5 + t1n // 1e4
 
   #.........................................................................................................
-  write = ( name, value ) ->
-    t = now()
-    cache[ name ] = { t, value, }
+  FS.write = ( name, value ) ->
+    t = @_now()
+    @cache[ name ] = { t, value, }
     return value
 
   #.........................................................................................................
-  read = ( name ) ->
-    return undefined unless ( R = cache[ name ] )?
+  FS.read = ( name ) ->
+    return undefined unless ( R = FS.cache[ name ] )?
     return R.value
 
   #.........................................................................................................
+  FS.read_source   = ( name        ) -> JSON.parse @read name
+  FS.write_source  = ( name, value ) -> @write name, JSON.stringify value
+
+  TC = {}
+
+  #.........................................................................................................
   cmp = ( name_a, name_b ) ->
-    throw new Error "unknown name #{rpr name_a}" unless ( entry_a = cache[ name_a ] )?
-    throw new Error "unknown name #{rpr name_b}" unless ( entry_b = cache[ name_b ] )?
+    throw new Error "unknown name #{rpr name_a}" unless ( entry_a = FS.cache[ name_a ] )?
+    throw new Error "unknown name #{rpr name_b}" unless ( entry_b = FS.cache[ name_b ] )?
     return -1 if entry_a.t < entry_b.t
     return +1 if entry_a.t > entry_b.t
     return  0
@@ -89,13 +100,13 @@ LTSORT                    = require 'ltsort'
   get_trend = ->
     R         = []
     collector = {}
-    ( collector[ entry.t ] ?= [] ).push name for name, entry of cache
+    ( collector[ entry.t ] ?= [] ).push name for name, entry of FS.cache
     R.push collector[ t ] for t in ( Object.keys collector ).sort()
     return R
 
   #.........................................................................................................
   indexed_from_boxed_series = ( time_series ) ->
-    R     = {}
+    R = {}
     for box, idx in time_series
       R[ name ] = idx for name in box
     return R
@@ -122,11 +133,9 @@ LTSORT                    = require 'ltsort'
         continue
       #.....................................................................................................
       for cmp_name, cmp_charting_idx of indexed_chart
-        ### skip entry for reference item in comparisons: ###
-        continue if ref_name          is cmp_name
         ### skip entries that have the same or smaller charting index (that are not depenedent on
         reference): ###
-        continue if ref_charting_idx  <= cmp_charting_idx
+        continue if ref_charting_idx <= cmp_charting_idx
         unless ( cmp_trending_idx = indexed_trend[ cmp_name ] )?
           warn_missing cmp_name
           continue
@@ -144,10 +153,6 @@ LTSORT                    = require 'ltsort'
     return R
 
   #.........................................................................................................
-  read_source   = ( name        ) -> debug name, read name; JSON.parse read name
-  write_source  = ( name, value ) -> write name, JSON.stringify value
-
-  #.........................................................................................................
   register = ( me, precedent, consequent, remedy ) ->
     key             = "#{consequent} -> #{precedent}"
     remedies        = me[ 'remedies' ] ?= {}
@@ -161,8 +166,8 @@ LTSORT                    = require 'ltsort'
     return R
 
   #.........................................................................................................
-  fc  = -> read  'f'
-  fp  = -> write 'f', ( read_source 'a.json' )[ 'x' ] + 3
+  fc  = -> FS.read  'f'
+  fp  = -> FS.write 'f', ( FS.read_source 'a.json' )[ 'x' ] + 3
   f   = ->
     return R if ( R = fc() )?
     return fp()
@@ -195,10 +200,10 @@ LTSORT                    = require 'ltsort'
   debug '78777-4', LTSORT.group           chart_graph
   help chart_graph
   #.........................................................................................................
-  write 'f.coffee', "### some CS here ###"
-  write 'f.js',     "/* some JS here */"
+  FS.write 'f.coffee', "### some CS here ###"
+  FS.write 'f.js',     "/* some JS here */"
   warn '################# @1 #############################'
-  write_source 'a.json', { x: 42, }
+  FS.write_source 'a.json', { x: 42, }
   # urge 'cache before:\n' + rpr cache
   info f()
   # urge 'cache after:\n' + rpr cache
@@ -212,8 +217,8 @@ LTSORT                    = require 'ltsort'
   warn find_first_fault chart_graph, indexed_chart, indexed_trend
   #.........................................................................................................
   warn '################# @2 #############################'
-  write 'f.coffee', "### some modified CS here ###"
-  write_source 'a.json', { x: 108, }
+  FS.write 'f.coffee', "### some modified CS here ###"
+  FS.write_source 'a.json', { x: 108, }
   # urge 'cache before:\n' + rpr cache
   info f()
   # urge 'cache after:\n' + rpr cache
