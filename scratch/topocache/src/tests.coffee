@@ -94,11 +94,36 @@ LTSORT                    = require 'ltsort'
     return R
 
   #.........................................................................................................
-  index_time_series = ( time_series ) ->
+  indexed_from_boxed_series = ( time_series ) ->
     R     = {}
     for box, idx in time_series
       R[ name ] = idx for name in box
     return R
+
+  #.........................................................................................................
+  find_faults = ( indexed_chart, indexed_trend ) ->
+    #.......................................................................................................
+    messages = {}
+    warn_missing = ( name ) ->
+      ### TAINT warn or fail? ###
+      message = "not in trend: #{rpr ref_name}"
+      warn message unless message of messages
+      messages[ message ] = 1
+      return null
+    #.......................................................................................................
+    for ref_name, ref_charting_idx of indexed_chart
+      unless ( ref_trending_idx = indexed_trend[ ref_name ] )?
+        warn_missing ref_name
+        continue
+      #.....................................................................................................
+      for cmp_name, cmp_charting_idx of indexed_chart
+        continue if ref_name is cmp_name
+        unless ( cmp_trending_idx = indexed_trend[ cmp_name ] )?
+          warn_missing cmp_name
+          continue
+        debug '33421', ref_name, ref_charting_idx, ref_trending_idx, cmp_name, cmp_charting_idx, cmp_trending_idx
+    #.......................................................................................................
+    return null
 
   #.........................................................................................................
   read_source   = ( name        ) -> debug name, read name; JSON.parse read name
@@ -154,10 +179,11 @@ LTSORT                    = require 'ltsort'
   info f()
   urge 'cache after:\n' + rpr cache
   # help ( cmp 'f', 'a.json' )
-  help get_trend()
-  help index_time_series get_trend()
-  help index_time_series LTSORT.group chart
   help ( test_cromulence 'f', 'a.json' )
+  help get_trend()
+  help indexed_trend = indexed_from_boxed_series get_trend()
+  help indexed_chart = indexed_from_boxed_series LTSORT.group chart
+  urge find_faults indexed_chart, indexed_trend
   #.........................................................................................................
   warn '################# @2 #############################'
   write 'f.coffee', "### some modified CS here ###"
@@ -166,10 +192,11 @@ LTSORT                    = require 'ltsort'
   info f()
   urge 'cache after:\n' + rpr cache
   # help ( cmp 'f', 'a.json' )
-  help get_trend()
-  help index_time_series get_trend()
-  help index_time_series LTSORT.group chart
   help ( test_cromulence 'f', 'a.json' )
+  help get_trend()
+  help indexed_trend = indexed_from_boxed_series get_trend()
+  help indexed_chart = indexed_from_boxed_series LTSORT.group chart
+  urge find_faults indexed_chart, indexed_trend
   #.........................................................................................................
   done()
 
@@ -220,7 +247,9 @@ dependency list vs timeline
 chart vs trend
 ?chart vs drift
 
-
+series
+boxed series
+indexed series
 
 ###
 
