@@ -117,11 +117,16 @@ LTSORT                    = require 'ltsort'
         continue
       #.....................................................................................................
       for cmp_name, cmp_charting_idx of indexed_chart
-        continue if ref_name is cmp_name
+        ### skip entry for reference item in comparisons: ###
+        continue if ref_name          is cmp_name
+        ### skip entries that have the same charting index: ###
+        continue if ref_charting_idx  <= cmp_charting_idx
         unless ( cmp_trending_idx = indexed_trend[ cmp_name ] )?
           warn_missing cmp_name
           continue
         debug '33421', ref_name, ref_charting_idx, ref_trending_idx, cmp_name, cmp_charting_idx, cmp_trending_idx
+        unless ref_trending_idx > cmp_trending_idx
+          warn ref_name, cmp_name
     #.......................................................................................................
     return null
 
@@ -155,10 +160,10 @@ LTSORT                    = require 'ltsort'
   (read: the modification time of the object identified as `'a.json'` must be less than that of `'f'`) as
   `L.add g, 'a.json', 'f'`.
   ###
-  register chart, 'a.json',   'f',        '???'
-  register chart, 'f',        'f.js',     '???'
+  # register chart, 'a.json',   'f',        '???'
+  # register chart, 'f',        'f.js',     '???'
   register chart, 'f.coffee', 'f.js',     "coffee -o lib -c src"
-  register chart, 'f',        'f.cache',  '???'
+  register chart, 'f.js',     'a.json',   '???'
   # register chart, 'f.cache', 'a.json', '???'
   # debug '78777-1', LTSORT.find_root_nodes chart, true
   # debug '78777-2', LTSORT.find_root_nodes chart, false
@@ -175,12 +180,13 @@ LTSORT                    = require 'ltsort'
   write 'f.js',     "/* some JS here */"
   warn '################# @1 #############################'
   write_source 'a.json', { x: 42, }
-  urge 'cache before:\n' + rpr cache
+  # urge 'cache before:\n' + rpr cache
   info f()
-  urge 'cache after:\n' + rpr cache
+  # urge 'cache after:\n' + rpr cache
   # help ( cmp 'f', 'a.json' )
   help ( test_cromulence 'f', 'a.json' )
-  help get_trend()
+  help "boxed chart:", LTSORT.group chart
+  help "boxed trend:", get_trend()
   help indexed_trend = indexed_from_boxed_series get_trend()
   help indexed_chart = indexed_from_boxed_series LTSORT.group chart
   urge find_faults indexed_chart, indexed_trend
@@ -188,12 +194,13 @@ LTSORT                    = require 'ltsort'
   warn '################# @2 #############################'
   write 'f.coffee', "### some modified CS here ###"
   write_source 'a.json', { x: 108, }
-  urge 'cache before:\n' + rpr cache
+  # urge 'cache before:\n' + rpr cache
   info f()
-  urge 'cache after:\n' + rpr cache
+  # urge 'cache after:\n' + rpr cache
   # help ( cmp 'f', 'a.json' )
   help ( test_cromulence 'f', 'a.json' )
-  help get_trend()
+  help "boxed chart:", LTSORT.group chart
+  help "boxed trend:", get_trend()
   help indexed_trend = indexed_from_boxed_series get_trend()
   help indexed_chart = indexed_from_boxed_series LTSORT.group chart
   urge find_faults indexed_chart, indexed_trend
@@ -251,5 +258,7 @@ series
 boxed series
 indexed series
 
+fault: a mismatch between the ordering relations between a reference entry and a comparison entry as
+  displayed in the chart on the one hand and in the trend on the other hand.
 ###
 
