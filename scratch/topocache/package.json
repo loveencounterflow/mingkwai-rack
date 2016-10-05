@@ -26,6 +26,6 @@
   "dependencies": {
     "cnd": "^4.2.0",
     "coffeenode-suspend": "^0.1.11",
-    "ltsort": "^1.1.4"
+    "ltsort": "^1.1.5"
   }
 }

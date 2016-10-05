@@ -165,6 +165,7 @@
     if ((R = me['boxed-chart']) != null) {
       return R;
     }
+    LTSORT.linearize(me['graph']);
     return me['boxed-chart'] = LTSORT.group(me['graph']);
   };
 
@@ -332,6 +333,7 @@
       g = TC.new_cache();
       TC.register(g, 'f.coffee', 'f.js', "coffee -o lib -c src");
       TC.register(g, 'f.js', 'a.json', '???');
+      TC.register(g, 'a.json', 'f.js', '???');
       TC.register(g, 'foo', 'bar', 'frobulate');
       TC.register(g, 'baz', null, 'bazify');
       FS.write('f.coffee', "### some CS here ###");

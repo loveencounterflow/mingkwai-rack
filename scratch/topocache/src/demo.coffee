@@ -20,6 +20,8 @@ test                      = require 'guy-test'
 TC                        = require './main'
 LTSORT                    = require 'ltsort'
 { step, }                 = require 'coffeenode-suspend'
+URL                       = require 'url'
+QUERYSTRING               = require 'querystring'
 
 
 #===========================================================================================================
@@ -45,7 +47,15 @@ FS.read = ( name ) ->
   return R.value
 
 #-----------------------------------------------------------------------------------------------------------
-FS.read_json  = ( name        ) -> JSON.parse @read name
+FS.read_json = ( name ) ->
+  json = @read name
+  try
+    return JSON.parse json
+  catch error
+    warn "invalid JSON for #{rpr name}: #{rpr json}"
+    throw error
+
+#-----------------------------------------------------------------------------------------------------------
 FS.write_json = ( name, value ) -> @write name, JSON.stringify value
 
 #-----------------------------------------------------------------------------------------------------------
@@ -98,21 +108,36 @@ XXX.test_cromulence = ( reference, comparators... ) ->
 #
 #-----------------------------------------------------------------------------------------------------------
 @register = ( me, precedent, consequent, fix ) ->
-  rc_key                  = @_get_rc_key me, precedent, consequent
+  precedent_url     = if ( CND.isa_list  precedent ) then ( @as_url me,  precedent... ) else  precedent
+  consequent_url    = if ( CND.isa_list consequent ) then ( @as_url me, consequent... ) else consequent
+  rc_key                  = @_get_rc_key me, precedent_url, consequent_url
   me[ 'fixes' ][ rc_key ] = fix
-  LTSORT.add me[ 'graph' ], precedent, consequent
+  LTSORT.add me[ 'graph' ], precedent_url, consequent_url
   return @_reset_chart me
 
 #-----------------------------------------------------------------------------------------------------------
-@_get_rc_key = ( me, precedent, consequent ) -> "#{consequent} -> #{precedent}"
-
-#-----------------------------------------------------------------------------------------------------------
 @get_fix = ( me, precedent, consequent, fallback ) ->
-  rc_key = @_get_rc_key me, precedent, consequent
+  precedent_url     = if ( CND.isa_list  precedent ) then ( @as_url me,  precedent... ) else  precedent
+  consequent_url    = if ( CND.isa_list consequent ) then ( @as_url me, consequent... ) else consequent
+  rc_key                  = @_get_rc_key me, precedent_url, consequent_url
   unless ( R = me[ 'fixes' ][ rc_key ] )?
     throw new Error "no fix for #{rpr rc_key}" if fallback is undefined
     R = fallback
   return R
+
+#-----------------------------------------------------------------------------------------------------------
+@as_url = ( me, protocol, payload ) ->
+  return URL.format { protocol, slashes: yes, pathname: payload, }
+
+#-----------------------------------------------------------------------------------------------------------
+@from_url = ( me, url ) ->
+  R         = URL.parse url, no, no
+  protocol  = R[ 'protocol' ].replace /:$/g, ''
+  payload   = ( QUERYSTRING.unescape R[ 'pathname' ] ).replace /^\//g, ''
+  return [ protocol, payload, ]
+
+#-----------------------------------------------------------------------------------------------------------
+@_get_rc_key = ( me, precedent, consequent ) -> "#{consequent} -> #{precedent}"
 
 
 #===========================================================================================================
@@ -120,6 +145,7 @@ XXX.test_cromulence = ( reference, comparators... ) ->
 #-----------------------------------------------------------------------------------------------------------
 @get_boxed_chart = ( me ) ->
   return R if ( R = me[ 'boxed-chart' ] )?
+  LTSORT.linearize me[ 'graph' ]
   return me[ 'boxed-chart' ] = LTSORT.group me[ 'graph' ]
 
 #-----------------------------------------------------------------------------------------------------------
@@ -223,35 +249,38 @@ XXX.test_cromulence = ( reference, comparators... ) ->
 TC = @
 main = ->
   step ( resume ) ->
-    fc  = -> FS.read  'f'
-    fp  = -> FS.write 'f', ( FS.read_json 'a.json' )[ 'x' ] + 3
-    f   = ->
-      return R if ( R = fc() )?
-      return fp()
+    _f_from_cache   = -> FS.read TC.as_url g, 'cache', 'f'
+    _f_recalculate  = ->
+      a_url     = TC.as_url g, 'file',  'a.json'
+      cache_url = TC.as_url g, 'cache', 'f'
+      a_value   = FS.read_json a_url
+      FS.write cache_url, a_value[ 'x' ] + 3
+    f = ->
+      return R if ( R = _f_from_cache() )?
+      return _f_recalculate()
 
     #.......................................................................................................
     g = TC.new_cache()
-    TC.register g, 'f.coffee', 'f.js',    "coffee -o lib -c src"
-    TC.register g, 'f.js',     'a.json',  '???'
-    TC.register g, 'foo',      'bar',     'frobulate'
-    TC.register g, 'baz',      null,      'bazify'
+    TC.register g, [ 'file', 'f.coffee',  ], [ 'file',  'f.js', ], [ 'bash',   'coffee -o lib -c src', ]
+    TC.register g, [ 'file', 'a.json',    ], [ 'cache', 'f',    ], [ 'advice', 'recalculate',          ]
+    # TC.register g, 'foo',      'bar',     "advice:frobulate"
+    # TC.register g, 'baz',      null,      "advice:bazify"
     # urge 'cache:\n' + rpr FS.cache
     # debug '78777-5', LTSORT.linearize g[ 'graph' ]
+    debug '78777', g
     #.......................................................................................................
-    FS.write 'f.coffee',  "### some CS here ###"
-    FS.write 'f.js',      "/* some JS here */"
-    FS.write 'foo',       "BLAH"
-    FS.write 'baz',       "BLAH"
+    FS.write      ( TC.as_url g, [ 'file', 'f.coffee', ]... ),  "### some CS here ###"
+    FS.write      ( TC.as_url g, [ 'file', 'f.js',     ]... ),  "/* some JS here */"
+    FS.write_json ( TC.as_url g, [ 'file', 'a.json',   ]... ),  { x: 42, }
     warn '################# @1 #############################'
-    FS.write_json 'a.json', { x: 42, }
     info f()
     urge 'cache:\n' + rpr FS.cache
     help "boxed trend:", yield TC.fetch_boxed_trend g, resume
     warn yield TC.find_first_fault  g, resume
     #.......................................................................................................
     warn '################# @2 #############################'
-    FS.write 'f.coffee', "### some modified CS here ###"
-    FS.write_json 'a.json', { x: 108, }
+    FS.write      ( TC.as_url g, [ 'file', 'f.coffee', ]... ), "### some modified CS here ###"
+    FS.write_json ( TC.as_url g, [ 'file', 'a.json',   ]... ), { x: 108, }
     info f()
     urge 'cache:\n' + rpr FS.cache
     # help "boxed trend:", yield TC.fetch_boxed_trend g, resume
@@ -267,15 +296,35 @@ unless module.parent?
   main()
 
   ###
-  URL = require 'url'
   debug URL.parse 'https://nodejs.org/api/url.html#url_url_format_urlobject'
+
   nfo =
     protocol: 'file:',
     slashes: true,
     pathname: '/home/url.json',
 
+  #-----------------------------------------------------------------------------------------------------------
+  as_url = ( protocol, payload ) ->
+    return URL.format { protocol, slashes: yes, pathname: payload, }
+
+  #-----------------------------------------------------------------------------------------------------------
+  from_url = ( url ) ->
+    R         = URL.parse url, no, no
+    protocol  = R[ 'protocol' ].replace /:$/g, ''
+    payload   = ( QUERYSTRING.unescape R[ 'pathname' ] ).replace /^\//g, ''
+    return [ protocol, payload, ]
+
   help URL.format nfo
-  help URL.format protocol: 'cache', slashes: no, pathname: 'foo'
-  help URL.format protocol: 'file', slashes: yes, pathname: 'foo'
+  help URL.format protocol: 'cache', slashes: yes, pathname: 'foo'
+  help URL.format protocol: 'file',  slashes: yes, pathname: 'foo'
+  urge URL.parse "bash:///coffee -o lib -c src", no, no
+  urge URL.parse "advice:///recalculate",        no, no
+  urge()
+  help as_url   'cache', 'foo'
+  help as_url   'file',  'foo'
+  urge from_url "bash:///coffee%20-o%20lib%20-c%20src"
+  urge from_url "advice:///recalculate"
   ###
+
+
 
