@@ -17,6 +17,8 @@ whisper                   = CND.get_logger 'whisper',   badge
 echo                      = CND.echo.bind CND
 #...........................................................................................................
 LTSORT                    = require 'ltsort'
+URL                       = require 'url'
+QUERYSTRING               = require 'querystring'
 FS                        = require 'fs'
 CS                        = require 'coffee-script'
 { step, }                 = require 'coffeenode-suspend'
@@ -24,17 +26,19 @@ CS                        = require 'coffee-script'
 
 #-----------------------------------------------------------------------------------------------------------
 timestamp_providers =
+  #---------------------------------------------------------------------------------------------------------
   # cache:
+
   #---------------------------------------------------------------------------------------------------------
   file:
     #.......................................................................................................
-    get_timestamp: ( path ) ->
+    get_timestamp: ( path ) =>
       ### TAINT return special value when file doesn't exist ###
       nfo = FS.statSync path
       return +nfo[ 'mtime' ]
 
     #.......................................................................................................
-    fetch_timestamp: ( path, handler ) ->
+    fetch_timestamp: ( path, handler ) =>
       step ( resume ) =>
         try
           stat = yield FS.stat path
@@ -44,7 +48,7 @@ timestamp_providers =
 
   #---------------------------------------------------------------------------------------------------------
   coffee:
-    fix: ( precedent_path, consequent_path ) ->
+    fix: ( precedent_path, consequent_path ) =>
       ### TAINT do ween sync & async fixing? signature? ###
       R = null
       js_source = CS.compile wrapped_source, { bare: no, filename: precedent_path, }

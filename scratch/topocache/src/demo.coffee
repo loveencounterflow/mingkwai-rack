@@ -20,8 +20,7 @@ test                      = require 'guy-test'
 TC                        = require './main'
 LTSORT                    = require 'ltsort'
 { step, }                 = require 'coffeenode-suspend'
-URL                       = require 'url'
-QUERYSTRING               = require 'querystring'
+resolve                   = ( require 'path' ).resolve
 
 
 #===========================================================================================================
@@ -85,17 +84,31 @@ XXX.test_cromulence = ( reference, comparators... ) ->
 #-----------------------------------------------------------------------------------------------------------
 main = ->
   step ( resume ) ->
-
+    #.......................................................................................................
+    paths =
+      f_coffee_template:  resolve '../test-data/f.template.coffee'
+      f_coffee:           resolve '../test-data/f.coffee'
+      f_js:               resolve '../test-data/f.js'
+      a_json_template:    resolve '../test-data/a.remplate.json'
+      a_json:             resolve '../test-data/a.json'
+    #.......................................................................................................
+    urls =
+      f_coffee_template:  TC.as_url null, 'file', paths.f_coffee_template
+      f_coffee:           TC.as_url null, 'file', paths.f_coffee
+      f_js:               TC.as_url null, 'file', paths.f_js
+      a_json_template:    TC.as_url null, 'file', paths.a_json_template
+      a_json:             TC.as_url null, 'file', paths.a_json
+      f_cache:            TC.as_url null, 'cache', 'f'
     #.......................................................................................................
     g = TC.new_cache()
-    TC.register g, [ 'file', 'f.coffee',  ], [ 'file',  'f.js', ], [ 'bash',   'coffee -o lib -c src', ]
-    TC.register g, [ 'file', 'f.js',      ], [ 'cache', 'f',    ], [ 'advice', 'recalculate',          ]
-    TC.register g, [ 'file', 'a.json',    ], [ 'cache', 'f',    ], [ 'advice', 'recalculate',          ]
+    TC.register g, urls.f_coffee, urls.f_js,    [ 'bash',   'coffee -o lib -c src', ]
+    TC.register g, urls.f_js,     urls.f_cache, [ 'advice', 'recalculate',          ]
+    TC.register g, urls.a_json,   urls.f_cache, [ 'advice', 'recalculate',          ]
     # debug '78777', g
     #.......................................................................................................
-    FS.write_json ( TC.as_url g, [ 'file', 'a.json',   ]... ),  { x: 42, }
-    FS.write      ( TC.as_url g, [ 'file', 'f.coffee', ]... ),  "### some CS here ###"
-    FS.write      ( TC.as_url g, [ 'file', 'f.js',     ]... ),  "/* some JS here */"
+    FS.write_json urls.a_json,   { x: 42, }
+    FS.write      urls.f_coffee, "### some CS here ###"
+    FS.write      urls.f_js,     "/* some JS here */"
     warn '################# @1 #############################'
     info f()
     urge 'cache:\n' + rpr FS.cache
@@ -104,8 +117,8 @@ main = ->
     warn '################# @2 #############################'
     help "boxed chart:\n",          TC.get_boxed_chart g
     help "boxed trend:\n", yield  TC.fetch_boxed_trend g, resume
-    FS.write      ( TC.as_url g, [ 'file', 'f.coffee', ]... ), "### some modified CS here ###"
-    FS.write_json ( TC.as_url g, [ 'file', 'a.json',   ]... ), { x: 108, }
+    FS.write      urls.f_coffee,  "### some modified CS here ###"
+    FS.write_json urls.a_json,    { x: 108, }
     help "boxed trend:\n", yield TC.fetch_boxed_trend g, resume
     info f()
     warn yield TC.find_first_fault  g, resume

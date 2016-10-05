@@ -25,6 +25,7 @@
   "license": "MIT",
   "dependencies": {
     "cnd": "^4.2.0",
+    "coffee-script": "^1.11.1",
     "coffeenode-suspend": "^0.1.11",
     "ltsort": "^1.1.5"
   }
