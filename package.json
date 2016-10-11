@@ -20,9 +20,9 @@
   },
   "homepage": "https://github.com/loveencounterflow/mingkwai-rack#readme",
   "dependencies": {
-    "cnd": "^4.1.5",
+    "cnd": "^4.2.0",
     "coffeenode-suspend": "^0.1.11",
-    "ncr": "^0.2.14",
-    "pipedreams": "^5.0.0"
+    "ncr": "^0.2.15",
+    "pipedreams": "^6.3.0"
   }
 }
